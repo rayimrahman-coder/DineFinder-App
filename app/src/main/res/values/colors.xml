@@ -34,4 +34,6 @@
     <color name="ar_marker_outline">#DCE7DF</color>
     <color name="ar_marker_selected">#18B96B</color>
     <color name="ar_on_marker_selected">#FFFFFF</color>
+    <color name="brand_green">#245B50</color>
+    <color name="window_background">#DEEBE3</color>
 </resources>
