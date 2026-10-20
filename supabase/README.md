@@ -103,11 +103,12 @@ Function, or anonymous Auth setup is needed. Routes require internet and may be
 limited by community-service availability, usage policies, or pedestrian-map
 coverage. Failures are reported instead of replaced with fictional paths.
 
-Nearby-search coordinates go to Supabase. Selecting Navigate sends route
+Nearby-search coordinates go to Supabase. Selecting GUIDE ME sends route
 endpoints to FOSSGIS. Camera frames remain on the device. Data is ©
 [OpenStreetMap contributors](https://www.openstreetmap.org/copyright), under ODbL.
-The camera UI uses approximate GPS/compass bearings; it does not detect world
-anchors, obstacles, or safe crossings.
+Discovery uses approximate GPS/compass bearings. Optional navigation uses local
+ARCore ground-plane anchors; this does not geolocate restaurant entrances or
+detect obstacles or safe crossings. No Google API key is required.
 
 The cloud environment's draft includes the Supabase and routing hosts, but the
 last observed runtime policy had not applied those additions. Draft saving does

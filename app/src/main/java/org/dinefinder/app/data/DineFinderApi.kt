@@ -284,8 +284,11 @@ class DineFinderApi(
         val rawTags = row.optJSONArray("tags")
         val tags = if (rawTags == null) emptyList() else
             (0 until rawTags.length()).mapNotNull { rawTags.opt(it) as? String }
-        val profileTags = if (row.opt("is_halal") == true && tags.none { it.equals("HALAL", ignoreCase = true) })
-            tags + "HALAL" else tags
+        val profileTags = when (row.opt("is_halal")) {
+            false -> tags.filterNot { it.equals("HALAL", ignoreCase = true) }
+            true -> if (tags.none { it.equals("HALAL", ignoreCase = true) }) tags + "HALAL" else tags
+            else -> tags
+        }
         return Restaurant(
             id = nonempty(row, "id"), name = nonempty(row, "name"),
             cuisine = string(row, "cuisine") ?: "Restaurant",
@@ -296,6 +299,7 @@ class DineFinderApi(
             accentHex = (row.opt("accent_hex") as? Number)?.toLong() ?: 0xffdef1e7L,
             tags = profileTags,
             openingHours = string(row, "opening_hours") ?: "Check opening hours with the restaurant",
+            isHalal = row.opt("is_halal") as? Boolean,
         )
     }
 

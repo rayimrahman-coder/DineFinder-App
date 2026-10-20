@@ -5,6 +5,7 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-feature android:name="android.hardware.camera.any" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.ar" android:required="false" />
 
     <application
         android:allowBackup="false"
@@ -14,6 +15,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.DineFinder"
         android:usesCleartextTraffic="false">
+        <meta-data android:name="com.google.ar.core" android:value="optional" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

@@ -71,7 +71,7 @@ Try the main flow:
 
 1. Open Home and tap **Scan for Restaurant**.
 2. Tap a restaurant marker to open its profile.
-3. Select **Navigate** and explore simulated route progress.
+3. Select **GUIDE ME** and explore simulated route progress.
 4. Test the demo heading and movement controls.
 5. Open Profile and try Settings, Help, and Log out.
 
@@ -109,7 +109,7 @@ Android app. No Google Maps or routing-provider key is required.
 Sync with Gradle, stop the app, and run it again after changing properties.
 Sign in or continue as guest, select **Scan for Restaurant**, and grant
 foreground location and camera permissions. Choose precise location when Android
-offers it. Discovery searches within 1 km of the real GPS location; Navigate
+offers it. Discovery searches within 1 km of the real GPS location; GUIDE ME
 requests walking directions through the public FOSSGIS pedestrian service.
 Live discovery and routing require internet.
 
@@ -166,3 +166,22 @@ lint reports are under `app/build/reports/`.
 Use a physical phone to validate live alignment and permissions. Camera guidance
 uses approximate GPS/compass bearings and does not detect obstacles or safe
 crossings.
+
+## Local 3D AR navigation without a Google API key
+
+On a compatible phone, selecting GUIDE ME starts local ARCore guidance. Accept
+the Google Play Services for AR installation prompt if shown. This is a device
+runtime, not a Google Maps API account or key. Slowly point the phone toward a
+well-lit ground surface; the 3D arrow appears once a horizontal plane is tracked.
+GPS and compass readings are still required to orient the arrow toward the route.
+
+Use **Use compass camera** to return to the ordinary camera view. Unsupported
+phones or a declined AR runtime installation fall back automatically. Try a
+real route, background/resume the app, turn the phone, and confirm that stale GPS
+or heading pauses directional guidance. The demo uses simulated camera data
+and does not test the ARCore runtime.
+
+The arrival screen checks proximity to the restaurant coordinates, not just the
+routing service's snapped path endpoint. GPS proximity is approximate and does
+not verify an exact entrance. New AR rendering and installation behavior require
+validation on a compatible physical phone.

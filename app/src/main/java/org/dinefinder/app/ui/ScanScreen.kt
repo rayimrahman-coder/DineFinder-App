@@ -29,10 +29,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.dinefinder.app.core.*
 import org.dinefinder.app.device.CameraPreview
+import org.dinefinder.app.ar.ArNavigationPreview
 import java.util.Locale
 import kotlin.math.ceil
 
 /** A GPS/compass overlay. It does not estimate a world-anchored AR pose. */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScanScreen(
     position: GeoPoint?,
@@ -55,152 +57,120 @@ fun ScanScreen(
     demoProgress: Double,
 ) {
     var listVisible by rememberSaveable { mutableStateOf(false) }
-    var allDirections by remember(route) { mutableStateOf(false) }
+    var directionsVisible by remember(route) { mutableStateOf(false) }
     var cameraError by remember(isDemo) { mutableStateOf<String?>(null) }
+    var arStatus by remember(route) { mutableStateOf<String?>(null) }
+    var arEnabled by remember(route) { mutableStateOf(!isDemo && route != null) }
     var cameraAttempt by remember { mutableIntStateOf(0) }
     val validHeading = heading?.takeIf { it.isFinite() }
-    val progress = if (position != null && route != null) nearestRouteProgress(position, route) else null
+    val progress = if (position != null && route != null) restaurantRouteProgress(position, route, destination?.location) else null
+    val pathEndsNearby = position != null && route != null && progress?.hasArrived == false && nearestRouteProgress(position, route).hasArrived
+    LaunchedEffect(progress?.hasArrived) { if (progress?.hasArrived == true) directionsVisible = false }
     val retry = { cameraAttempt++; cameraError = null; onRetry() }
     val problems = listOfNotNull(error, locationError, headingError, cameraError).distinct()
 
     Column(Modifier.fillMaxSize().background(DinePaper)) {
-        Row(
-            Modifier.fillMaxWidth().padding(start = 6.dp, end = 12.dp, top = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            IconButton(onClick = onClose) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back to Home")
-            }
+        Row(Modifier.fillMaxWidth().padding(horizontal = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onClose) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back to Home") }
             Column(Modifier.weight(1f)) {
-                Text(if (route == null) "Scan for Restaurant" else "Your walking route", style = MaterialTheme.typography.titleMedium)
-                Text("Within 1 km of your location", color = DineMuted, fontSize = 11.sp)
+                Text(if (route == null) "Discover restaurants" else "Walking navigation", style = MaterialTheme.typography.titleMedium)
+                Text(if (route == null) "Within 1 km · tap a dining marker" else destination?.name.orEmpty(), color = DineMuted, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
-            TextButton(onClick = { listVisible = !listVisible }) {
-                Icon(if (listVisible) Icons.Default.CameraAlt else Icons.Default.List, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.width(5.dp))
-                Text(if (listVisible) "Camera" else "List")
-            }
+            TextButton(onClick = { listVisible = !listVisible }) { Text(if (listVisible) "Camera" else "List") }
         }
-        if (busy) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            if (isDemo) item {
-                ScanNotice("Demo · fictional restaurants and simulated movement", Icons.Default.Science)
-            }
-            if (problems.isNotEmpty()) item {
-                Surface(color = Color(0xFFFFF0D5), shape = RoundedCornerShape(16.dp)) {
-                    Column(Modifier.padding(14.dp)) {
-                        Text(problems.joinToString("\n"), color = Color(0xFF725B32), style = MaterialTheme.typography.bodySmall)
-                        TextButton(onClick = retry, enabled = !busy) { Text(if (busy) "Connecting…" else "Retry sensors and search") }
-                    }
-                }
-            }
-            if (!listVisible) item {
-                ScanCameraScene(
-                    position, validHeading, restaurants, route, progress, isDemo, busy,
-                    cameraAllowed, cameraAttempt, { cameraError = it }, onSelect,
-                )
-            }
-            if (route != null) item {
-                val fraction = if (route.distanceMeters > 0.0 && progress != null)
-                    (progress.remainingMeters / route.distanceMeters).coerceIn(0.0, 1.0) else 1.0
-                val minutes = ceil(route.durationSeconds * fraction / 60.0).toInt().coerceAtLeast(1)
-                Surface(color = Color.White, shape = RoundedCornerShape(20.dp)) {
-                    Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Text(destination?.name ?: "Your destination", style = MaterialTheme.typography.titleLarge)
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.DirectionsWalk, contentDescription = null, tint = DineGreen)
-                            Spacer(Modifier.width(10.dp))
-                            Text(
-                                when {
-                                    progress == null -> "Waiting for a current GPS fix"
-                                    progress.hasArrived -> "You’ve arrived"
-                                    else -> "$minutes min · ${scanDistance(progress.remainingMeters)} remaining"
-                                },
-                                fontWeight = FontWeight.SemiBold,
-                            )
-                        }
-                        if (route.isDemo) Text("Simulation only. This path does not represent streets or walkable access.", color = DineMuted, fontSize = 12.sp)
-                        if (progress?.isOffRoute == true && !progress.hasArrived) {
-                            Text("You’re away from the walking route. Recalculate before following the next direction.", color = DineRed, fontSize = 13.sp)
-                            Button(onClick = onRecalculate, enabled = !busy) { Text(if (busy) "Calculating…" else "Recalculate route") }
-                        }
-                        progress?.instruction?.let { instruction ->
-                            Text(instruction.text, style = MaterialTheme.typography.titleMedium)
-                        }
-                        val activeStep = progress?.instruction?.let { route.instructions.indexOf(it) }?.coerceAtLeast(0) ?: 0
-                        val steps = route.instructions.drop(activeStep)
-                        steps.take(if (allDirections) Int.MAX_VALUE else 3).forEachIndexed { index, instruction ->
-                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
-                                Text("${activeStep + index + 1}.", color = DineMuted, modifier = Modifier.width(24.dp))
-                                Text(instruction.text, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
-                                Spacer(Modifier.width(10.dp))
-                                Text(scanDistance(instruction.distanceMeters), color = DineMuted, fontSize = 11.sp)
-                            }
-                        }
-                        if (steps.size > 3) TextButton(onClick = { allDirections = !allDirections }) {
-                            Text(if (allDirections) "Show fewer directions" else "Show all directions")
-                        }
-                        Button(onClick = onClose, modifier = Modifier.fillMaxWidth()) {
-                            Text(if (progress?.hasArrived == true) "Finish journey" else "End navigation")
-                        }
-                    }
-                }
-            }
-            if (isDemo) item {
-                Surface(color = Color(0xFFFFF0D5), shape = RoundedCornerShape(16.dp)) {
-                    Column(Modifier.padding(16.dp)) {
-                        Text("Try the camera view", fontWeight = FontWeight.SemiBold)
-                        Text("Simulated heading: ${(validHeading ?: 0.0).toInt()}°", fontSize = 12.sp, color = DineMuted)
-                        Slider(
-                            value = (validHeading ?: 0.0).coerceIn(0.0, 359.0).toFloat(),
-                            onValueChange = { onHeadingChange(it.toDouble()) }, valueRange = 0f..359f,
-                            modifier = Modifier.semantics { contentDescription = "Demo compass heading" },
-                        )
-                        if (route != null) {
-                            Text("Simulate walking: ${(demoProgress.coerceIn(0.0, 1.0) * 100).toInt()}%", color = DineMuted, fontSize = 12.sp)
-                            Slider(
-                                value = demoProgress.coerceIn(0.0, 1.0).toFloat(),
-                                onValueChange = { onWalkChange(it.toDouble()) },
-                                modifier = Modifier.semantics { contentDescription = "Demo walking progress" },
-                            )
-                        }
-                    }
-                }
-            }
-            if (!listVisible && route == null) item {
-                OutlinedButton(onClick = { listVisible = true }, modifier = Modifier.fillMaxWidth()) {
-                    Text("View ${restaurants.size} nearby restaurants")
-                }
-            }
-            if (listVisible) {
-                item {
-                    Text("${restaurants.size} restaurants within 1 km", style = MaterialTheme.typography.titleMedium)
-                }
+        if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
+        if (progress?.hasArrived == true) {
+            ArrivalScreen(destination, isDemo, onClose)
+            return@Column
+        }
+        if (listVisible) {
+            LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                item { Text("${restaurants.size} restaurants within 1 km", style = MaterialTheme.typography.titleMedium) }
+                if (isDemo) item { ScanNotice("Demo · fictional restaurants", Icons.Default.Science) }
+                if (problems.isNotEmpty()) item { Text(problems.joinToString("\n"), color = DineRed) }
                 if (restaurants.isEmpty()) item {
-                    Surface(color = Color.White, shape = RoundedCornerShape(18.dp)) {
-                        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            Text(if (position == null) "Waiting for your location" else if (busy) "Finding restaurants…" else "No restaurants found within 1 km", fontWeight = FontWeight.SemiBold)
-                            Text(if (position == null) "Allow location access and wait for a GPS fix." else "Only restaurants with a recorded location inside the search radius appear here.", color = DineMuted, fontSize = 13.sp)
-                            TextButton(onClick = retry, enabled = !busy) { Text("Search again") }
-                        }
-                    }
+                    Text(if (position == null) "Waiting for a fresh GPS fix" else if (busy) "Searching…" else "No restaurants recorded within 1 km")
                 }
                 items(restaurants, key = { it.id }) { restaurant ->
                     ScanRestaurantCard(restaurant, position?.let { distanceMeters(it, restaurant.location) }, busy, onSelect)
                 }
+                item { OutlinedButton(onClick = retry, enabled = !busy) { Text("Refresh location and search") } }
             }
-            item {
-                Text(
-                    "GPS + compass guidance is approximate. Stay aware of traffic and use the written directions; the camera does not detect obstacles or safe crossings.",
-                    color = DineMuted, fontSize = 11.sp, lineHeight = 17.sp,
-                )
-                if (!isDemo) Text("Walking routes: FOSSGIS · © OpenStreetMap contributors · ODbL", color = DineMuted, fontSize = 10.sp)
+        } else {
+            Box(Modifier.weight(1f).fillMaxWidth()) {
+                ScanCameraScene(position, validHeading, restaurants, route, progress, isDemo, busy,
+                    cameraAllowed, cameraAttempt, { cameraError = it }, onSelect,
+                    arEnabled, pathEndsNearby, { arStatus = it }, { arEnabled = false; arStatus = "Local 3D AR is unavailable. Using the camera compass view." },
+                    Modifier.fillMaxSize())
+                Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (route != null) Surface(color = Color.Black.copy(alpha = .75f), shape = RoundedCornerShape(16.dp)) {
+                        Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(progress?.instruction?.text ?: "Waiting for your location", color = Color.White, fontWeight = FontWeight.SemiBold)
+                            if (progress?.isOffRoute == true) {
+                                Text("Off route · recalculate before continuing", color = Color(0xFFFFD58B))
+                                Button(onClick = onRecalculate, enabled = !busy) { Text("Recalculate") }
+                            }
+                            if (!isDemo) {
+                                Text(arStatus ?: "GPS + compass guidance", color = Color.White.copy(alpha = .8f), fontSize = 11.sp)
+                                TextButton(onClick = { arEnabled = !arEnabled; arStatus = null }) {
+                                    Text(if (arEnabled) "Use compass camera" else "Try local 3D AR", color = Color(0xFF7CF4B2))
+                                }
+                            }
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                OutlinedButton(onClick = { directionsVisible = true }, Modifier.weight(1f)) { Text("Directions", color = Color.White) }
+                                OutlinedButton(onClick = onClose, Modifier.weight(1f)) { Text("End", color = Color.White) }
+                            }
+                        }
+                    }
+                    if (problems.isNotEmpty()) Surface(color = Color(0xFFFBECCF), shape = RoundedCornerShape(14.dp)) {
+                        Column(Modifier.padding(10.dp)) {
+                            Text(problems.joinToString("\n"), color = Color(0xFF725B32), fontSize = 11.sp, maxLines = 4, overflow = TextOverflow.Ellipsis)
+                            TextButton(onClick = retry, enabled = !busy) { Text("Retry sensors and search") }
+                        }
+                    }
+                    if (isDemo) Surface(color = Color(0xFFFBECCF), shape = RoundedCornerShape(14.dp)) {
+                        Column(Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
+                            Text("SIMULATION · fictional places and paths", color = DineInk, fontSize = 11.sp)
+                            Text("Heading ${(validHeading ?: 0.0).toInt()}°", color = DineMuted, fontSize = 10.sp)
+                            Slider(value = (validHeading ?: 0.0).coerceIn(0.0, 359.0).toFloat(), onValueChange = { onHeadingChange(it.toDouble()) }, valueRange = 0f..359f,
+                                modifier = Modifier.height(30.dp).semantics { contentDescription = "Demo compass heading" })
+                            if (route != null) {
+                                Text("Walk ${(demoProgress * 100).toInt()}%", color = DineMuted, fontSize = 10.sp)
+                                Slider(value = demoProgress.toFloat().coerceIn(0f, 1f), onValueChange = { onWalkChange(it.toDouble()) },
+                                    modifier = Modifier.height(30.dp).semantics { contentDescription = "Demo walking progress" })
+                            }
+                        }
+                    }
+                    if (route == null) FilledTonalButton(onClick = { listVisible = true }, Modifier.fillMaxWidth()) {
+                        Text("${restaurants.size} nearby restaurants · View list")
+                    }
+                }
             }
         }
+    }
+    if (directionsVisible && route != null) ModalBottomSheet(onDismissRequest = { directionsVisible = false }) {
+        LazyColumn(Modifier.fillMaxWidth().heightIn(max = 560.dp), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            item { Text("Walking directions", style = MaterialTheme.typography.headlineSmall) }
+            items(route.instructions) { instruction -> Text("${instruction.text} · ${scanDistance(instruction.distanceMeters)}") }
+            item { Text("Routing: FOSSGIS · © OpenStreetMap contributors · ODbL", style = MaterialTheme.typography.bodySmall) }
+        }
+    }
+}
+
+@Composable
+private fun ArrivalScreen(destination: Restaurant?, demo: Boolean, onFinish: () -> Unit) {
+    Column(Modifier.fillMaxSize().padding(28.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+        Surface(color = DineMint, shape = CircleShape) {
+            Icon(Icons.Default.CheckCircle, null, tint = DineGreen, modifier = Modifier.padding(28.dp).size(72.dp))
+        }
+        Spacer(Modifier.height(28.dp))
+        Text("Arrive at the restaurant", style = MaterialTheme.typography.headlineMedium, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+        Spacer(Modifier.height(12.dp))
+        Text(destination?.name.orEmpty(), style = MaterialTheme.typography.titleLarge, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+        Spacer(Modifier.height(16.dp))
+        Text(if (demo) "Demo arrival · simulated walking" else "GPS indicates you are near the destination. Check the restaurant entrance around you.", color = DineMuted, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+        Spacer(Modifier.height(32.dp))
+        Button(onClick = onFinish, modifier = Modifier.fillMaxWidth()) { Text("Back to Home") }
     }
 }
 
@@ -217,18 +187,28 @@ private fun ScanCameraScene(
     cameraAttempt: Int,
     onCameraError: (String?) -> Unit,
     onSelect: (Restaurant) -> Unit,
+    arEnabled: Boolean,
+    pathEndsNearby: Boolean,
+    onArStatus: (String) -> Unit,
+    onArUnavailable: () -> Unit,
+    modifier: Modifier,
 ) {
     BoxWithConstraints(
-        Modifier.fillMaxWidth().height(420.dp).clip(RoundedCornerShape(24.dp)).background(Color(0xFF18332E)),
+        modifier.background(Color(0xFF18332E)),
     ) {
         when {
             isDemo -> DemoCameraBackground(Modifier.fillMaxSize())
+            cameraAllowed && arEnabled && route != null -> ArNavigationPreview(
+                if (position != null && heading != null && progress != null && !progress.isOffRoute && !progress.hasArrived && !pathEndsNearby)
+                    headingDelta(bearingDegrees(position, progress.targetPoint), heading) else null,
+                Modifier.fillMaxSize(), onArStatus, onArUnavailable,
+            )
             cameraAllowed -> key(cameraAttempt) { CameraPreview(Modifier.fillMaxSize(), onCameraError) }
         }
         Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = .45f), Color.Transparent, Color.Black.copy(alpha = .75f)))))
         Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
             Surface(color = Color.Black.copy(alpha = .4f), shape = RoundedCornerShape(20.dp)) {
-                Text(if (isDemo) "SIMULATED CAMERA" else "LIVE CAMERA", Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
+                Text(if (isDemo) "SIMULATED CAMERA" else if (arEnabled && route != null) "LOCAL 3D AR" else "LIVE CAMERA", Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
                     color = if (isDemo) Color(0xFFFFD58B) else Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
             }
             Spacer(Modifier.weight(1f))
@@ -238,18 +218,18 @@ private fun ScanCameraScene(
             restaurant to projectMarker(bearingDegrees(position, restaurant.location), heading)
         }.filter { it.second.isVisible }.take(6) else emptyList()
         if (position != null) visibleMarkers.forEachIndexed { index, (restaurant, projection) ->
-            val markerWidth = minOf(150.dp, maxWidth - 24.dp)
+            val markerWidth = minOf(124.dp, maxWidth - 24.dp)
             val x = 12.dp + (maxWidth - markerWidth - 24.dp) * ((projection.horizontal + 1.0) / 2.0).toFloat()
             Surface(
-                onClick = { onSelect(restaurant) }, enabled = !busy, color = Color.White.copy(alpha = .96f), shape = RoundedCornerShape(15.dp), shadowElevation = 4.dp,
+                onClick = { onSelect(restaurant) }, enabled = !busy, color = Color.White.copy(alpha = .96f), shape = RoundedCornerShape(32.dp), shadowElevation = 4.dp,
                 modifier = Modifier.width(markerWidth).offset(x = x, y = (90 + (index % 3) * 72).dp),
             ) {
                 Row(Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(restaurant.emoji, fontSize = 22.sp)
+                    Icon(Icons.Default.Restaurant, contentDescription = null, tint = DineGreen, modifier = Modifier.size(24.dp))
                     Spacer(Modifier.width(7.dp))
                     Column(Modifier.weight(1f)) {
                         Text(restaurant.name, fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis, color = DineInk)
-                        Text(scanDistance(distanceMeters(position, restaurant.location)), color = DineMuted, fontSize = 10.sp)
+                        Text(scanDistance(distanceMeters(position, restaurant.location)) + if (restaurant.halalStatus == "Halal") " · Halal" else "", color = DineMuted, fontSize = 10.sp)
                     }
                 }
             }
@@ -258,6 +238,7 @@ private fun ScanCameraScene(
             position == null -> if (busy) "Getting your GPS location…" else "A current GPS fix is needed to place restaurant markers."
             !isDemo && !cameraAllowed -> "Camera access is unavailable. You can still use the restaurant list."
             progress?.hasArrived == true -> "You’ve arrived"
+            pathEndsNearby -> "The mapped path ends nearby. Check the restaurant entrance."
             progress?.isOffRoute == true -> "Off route · recalculate your walking route"
             heading == null -> "A compass heading isn’t available. Use the restaurant list and written walking directions."
             route == null && restaurants.isEmpty() -> if (busy) "Finding nearby restaurants…" else "No restaurants found within 1 km"
@@ -277,7 +258,7 @@ private fun ScanCameraScene(
                 Spacer(Modifier.height(12.dp))
                 Text(guidance, color = Color.White, style = MaterialTheme.typography.bodyMedium, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
             }
-        } else if (position != null && heading != null && progress != null && !progress.isOffRoute && !progress.hasArrived) {
+        } else if (!arEnabled && position != null && heading != null && progress != null && !progress.isOffRoute && !progress.hasArrived) {
             Column(Modifier.align(Alignment.Center).padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 Icon(
                     Icons.Default.Navigation, contentDescription = "Bearing toward the next walking route point",
@@ -290,17 +271,14 @@ private fun ScanCameraScene(
                     fontWeight = FontWeight.Bold, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
             }
         }
-        Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(18.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Canvas(Modifier.widthIn(max = 280.dp).fillMaxWidth().height(18.dp)) {
-                for (index in 0..20) {
-                    val x = size.width * index / 20
-                    drawLine(Color.White.copy(alpha = .5f), Offset(x, 0f), Offset(x, if (index % 5 == 0) 12f else 6f), strokeWidth = 1.2f)
-                }
-                drawCircle(Color(0xFFFFD58B), radius = 3f, center = Offset(size.width / 2, 16f))
-            }
-            Spacer(Modifier.height(8.dp))
-            Text("GPS + compass · approximate alignment", color = Color.White.copy(alpha = .8f), fontSize = 10.sp)
+        if (progress != null) Surface(
+            modifier = Modifier.align(Alignment.TopCenter).padding(top = 62.dp),
+            color = Color.Black.copy(alpha = .6f), shape = RoundedCornerShape(20.dp),
+        ) {
+            Text("${scanDistance(progress.remainingMeters)} remaining", Modifier.padding(horizontal = 18.dp, vertical = 10.dp),
+                color = Color.White, style = MaterialTheme.typography.titleMedium)
         }
+
     }
 }
 

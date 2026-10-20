@@ -274,7 +274,7 @@ fun WelcomeScreen(
                 Text(
                     "Camera images stay on your device. Your location is sent to Supabase " +
                         "when you search for nearby restaurants, and to the FOSSGIS walking-route " +
-                        "service when you select Navigate.\n\n" +
+                        "service when you select GUIDE ME.\n\n" +
                         "Demo mode uses fictional restaurants and simulated movement. " +
                         "You can change location and camera permissions in Android settings.",
                 )

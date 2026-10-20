@@ -8,7 +8,8 @@ with Settings, Help, and Log out.
 
 Restaurant data and optional accounts use Supabase. Walking directions come
 from the public FOSSGIS OpenStreetMap pedestrian routing service. No Google Maps,
-OpenRouteService, or paid routing API key is required.
+OpenRouteService, or paid routing API key is required. Local ARCore tracking also
+requires no Google API key; cloud anchors and Geospatial services are not used.
 
 ## Open and run
 
@@ -27,7 +28,7 @@ For step-by-step cloning, device setup, and live configuration, see
 
 Without Supabase configuration, select **Continue as guest** to use the labeled
 offline demo. Home displays a radar and **Scan for Restaurant**. Open a sample
-restaurant's profile and select **Navigate** to try simulated camera guidance
+restaurant's profile and select **GUIDE ME** to try simulated camera guidance
 and route progress. Profile contains Settings, Help, and Log out.
 
 The demo's Kuala Lumpur restaurants, ratings, addresses, schedules, and paths
@@ -80,7 +81,7 @@ Lumpur demo collection is separate from these live records.
 
 In Live mode, **Scan for Restaurant** requests foreground location and camera
 access and queries Supabase within 1 km of the phone's actual coordinates.
-Tapping a marker opens its profile. **Navigate** requests pedestrian directions
+Tapping a marker opens its profile. **GUIDE ME** requests pedestrian directions
 without a routing key. Live discovery and navigation need internet access; the
 two food courts appear only when they fall within the search radius. For more
 setup and verification steps, see [the database guide](supabase/README.md).
@@ -94,16 +95,24 @@ restarting the process or when the session expires.
 CameraX supplies the camera view, Android LocationManager supplies foreground
 location, and SensorManager supplies heading information. Markers estimate the
 bearing to each restaurant. Navigation follows the route's next point, with
-walking instructions and progress. This is an approximate **GPS/compass overlay**;
-it does not track world anchors, detect obstacles, or identify safe crossings.
-Use the written directions and remain aware of your surroundings.
+walking instructions and progress. Discovery uses approximate **GPS/compass
+markers**. During navigation, compatible
+phones can use **local ARCore plane tracking** to place an extruded 3D arrow on a
+detected ground surface. Move the phone slowly toward the ground to initialize
+tracking. Use **Use compass camera** to switch back, or **Try local 3D AR** to
+retry. Unsupported devices automatically use the camera compass view.
+
+The local ground anchor does not establish the geographic position of a
+restaurant entrance. Directions still depend on GPS, compass calibration, and
+OpenStreetMap paths. Neither mode detects obstacles or safe crossings. Use the
+written directions and remain aware of your surroundings.
 
 A physical Android phone is the primary live target. Camera, location, and
 compass behavior depend on device hardware, permissions, accuracy, and
 calibration. The emulator is useful for the demo and UI testing. Foreground
 sensors and camera resources are released when the app is no longer active.
 
-Nearby-search coordinates go to Supabase. Selecting Navigate sends route
+Nearby-search coordinates go to Supabase. Selecting GUIDE ME sends route
 endpoints to `routing.openstreetmap.de`. Camera frames stay on the device. Public
 routing has usage limits and may be unavailable; the app must report route
 failures rather than replace them with demo geometry. Paths depend on
@@ -133,7 +142,7 @@ The debug APK is written to:
 app/build/outputs/apk/debug/app-debug.apk
 ```
 
-Verified: the native debug APK build, all **29 unit tests**, Android lint, and
+Verified: the native debug APK build, all **36 unit tests**, Android lint, and
 the local PostGIS integration checks pass. The APK signature and permissions
 were checked, and the APK includes the supplied public Supabase configuration.
 
@@ -152,6 +161,12 @@ bash supabase/tests/run-postgis.sh
 That check requires Docker and validates the schema, radius boundaries,
 coordinate validation, ordering, public read-only restaurant access, private profile RLS, sign-up triggers,
 backfills, and setup idempotence. It does not deploy a Supabase project.
+
+## Report design
+
+The discovery, bottom metadata card (**GUIDE ME / CANCEL**), live route-distance
+counter, 3D arrow, and dedicated arrival screen follow the supplied DineFinder
+FYP report, section 4.2 (pages 57–60). See [report implementation notes](docs/REPORT_ALIGNMENT.md).
 
 ## Project layout
 

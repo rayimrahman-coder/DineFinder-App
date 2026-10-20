@@ -29,6 +29,7 @@ data class Restaurant(
     val accentHex: Long,
     val tags: List<String> = emptyList(),
     val openingHours: String = "Check opening hours with the restaurant",
+    val isHalal: Boolean? = null,
 ) {
     init {
         require(id.isNotBlank() && name.isNotBlank()) { "A restaurant needs an ID and name." }
@@ -37,6 +38,11 @@ data class Restaurant(
     }
 
     val priceLabel: String get() = "\$".repeat(priceLevel)
+    val halalStatus: String get() = when (isHalal) {
+        true -> "Halal"
+        false -> "Not halal"
+        null -> if (tags.any { it.equals("HALAL", ignoreCase = true) }) "Halal" else "Not provided"
+    }
 }
 
 data class RouteInstruction(

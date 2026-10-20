@@ -153,7 +153,7 @@ private fun DineFinderRoot(model: AppViewModel = viewModel()) {
         text = { Text(
             "1. Tap Scan for Restaurant and allow location and camera access.\n\n" +
             "2. DineFinder searches Supabase for restaurant records within 1 km of your GPS location. Turn your phone to see markers, or open the list.\n\n" +
-            "3. Tap a restaurant for its profile, then Navigate for pedestrian directions and a camera arrow.\n\n" +
+            "3. Tap a restaurant for its profile, then GUIDE ME for pedestrian directions and a camera arrow.\n\n" +
             "Camera guidance uses approximate GPS and compass bearings. It does not recognize restaurant signs or detect obstacles or safe crossings.\n\n" +
             "Camera frames remain on the device. Nearby coordinates go to Supabase; route endpoints go to FOSSGIS OpenStreetMap.\n\n" +
             "Demo mode uses fictional places and simulated routes. Guest names and account sessions last until this app process ends.",
@@ -171,24 +171,28 @@ private fun DineFinderRoot(model: AppViewModel = viewModel()) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun RestaurantDialog(restaurant: Restaurant, distance: Double?, demo: Boolean, busy: Boolean, onClose: () -> Unit, onNavigate: () -> Unit) {
-    AlertDialog(onDismissRequest = onClose,
-        title = { Text("${restaurant.emoji} ${restaurant.name}") },
-        text = {
-            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                if (demo) Text("FICTIONAL DEMO RESTAURANT", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
-                Text(restaurant.cuisine, style = MaterialTheme.typography.titleMedium)
-                val rating = if (restaurant.rating > 0) String.format(Locale.getDefault(), "★ %.1f", restaurant.rating) else "Not rated"
-                Text(rating + (if (demo) " · ${restaurant.priceLabel}" else "") +
-                    (distance?.let { " · ${it.toInt()} m away" } ?: ""))
-                Text(restaurant.description)
-                Text(restaurant.address)
-                Text(restaurant.openingHours)
-                if (restaurant.tags.isNotEmpty()) Text(restaurant.tags.joinToString(" · "))
+    ModalBottomSheet(onDismissRequest = onClose, containerColor = Color.White) {
+        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp).padding(bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            if (demo) Text("FICTIONAL DEMO RESTAURANT", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
+            Text("${restaurant.emoji} ${restaurant.name}", style = MaterialTheme.typography.headlineSmall)
+            val rating = if (restaurant.rating > 0) String.format(Locale.getDefault(), "★ %.1f", restaurant.rating) else "Not rated"
+            Text("Rating: $rating")
+            Text("Cuisine type: ${restaurant.cuisine}")
+            Text("Halal status: ${restaurant.halalStatus}")
+            Text("Price range: ${if (demo) restaurant.priceLabel else "Not provided"}")
+            Text("Operating hours: ${restaurant.openingHours}")
+            Text("Address: ${restaurant.address.ifBlank { "Not provided" }}")
+            distance?.let { Text("${it.toInt()} m from your location", color = MaterialTheme.colorScheme.primary) }
+            if (restaurant.description.isNotBlank()) Text(restaurant.description)
+            if (restaurant.tags.isNotEmpty()) Text(restaurant.tags.joinToString(" · "))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Button(enabled = !busy, onClick = onNavigate, modifier = Modifier.weight(1f)) { Text("GUIDE ME") }
+                OutlinedButton(onClick = onClose, modifier = Modifier.weight(1f)) { Text("CANCEL") }
             }
-        },
-        dismissButton = { TextButton(onClick = onClose) { Text("Close") } },
-        confirmButton = { Button(enabled = !busy, onClick = onNavigate) { Text("Navigate") } },
-    )
+        }
+    }
 }
