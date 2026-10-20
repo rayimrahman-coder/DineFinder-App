@@ -1,160 +1,168 @@
 # Test DineFinder in Android Studio
 
-You can run the guest demo immediately. Connecting real restaurant data and
-optional accounts requires your Supabase project's public configuration. Walking
-routes require no paid map or routing API key.
+DineFinder is a native Kotlin/Jetpack Compose Android project. Android Studio's
+Android and Kotlin support is sufficient. You can test the guest demo before
+connecting a Supabase project.
 
-## 1. Install the tools
+## 1. Get the project
 
-Install [Android Studio](https://developer.android.com/studio),
-[Git](https://git-scm.com/downloads), and Flutter **3.44.0** from the
-[Flutter SDK archive](https://docs.flutter.dev/install/archive). Extract Flutter
-to a folder you can write to, then add its `bin` folder to your computer's PATH.
-
-In Android Studio, open **Settings → Plugins → Marketplace**, install the
-**Flutter** plugin, accept installation of the Dart plugin, and restart the IDE.
-On macOS, Settings may be named Preferences.
-
-Open **Settings → Languages & Frameworks → Flutter** and select your extracted
-Flutter SDK folder. In a terminal, `flutter --version` should report Flutter
-3.44.0 and Dart 3.12.0.
-
-## 2. Get the code from GitHub
+Install [Android Studio](https://developer.android.com/studio) and
+[Git](https://git-scm.com/downloads).
 
 On Android Studio's welcome screen, select **Get from VCS** or **Clone Repository**.
-If a project is open, use **File → New → Project from Version Control**.
-
-Choose Git, enter this URL, select a local folder, and click **Clone**:
+If a project is already open, select **File → New → Project from Version Control**.
+Choose Git and paste:
 
 ```text
 https://github.com/rayimrahman-coder/DineFinder-App.git
 ```
 
-Open and trust the project. Select the root folder containing `pubspec.yaml` and
-`lib/main.dart` so Android Studio can load the Flutter project.
+Choose a local folder, click **Clone**, and open and trust the project. Open the
+repository root containing `settings.gradle.kts`, `gradlew`, and `app`.
 
-If you already cloned the project, open its root folder and get the latest code
-with **Git → Pull**, or run this from Android Studio's terminal:
+If the repository is already on your computer, use **Git → Pull**, or open its
+terminal and run:
 
 ```sh
 git pull --ff-only
 ```
 
-## 3. Prepare Android's SDK
+Then select **File → Sync Project with Gradle Files**.
 
-Open **Tools → SDK Manager**. Install the following components:
+## 2. Prepare the Android tools
+
+Open **Tools → SDK Manager** and install:
 
 - **SDK Platforms:** Android SDK Platform **36**.
 - **SDK Tools:** Android SDK Build-Tools **36.0.0**, Android SDK Platform-Tools,
   and Android SDK Command-line Tools.
-- **SDK Tools → Show Package Details → NDK (Side by side):**
-  **28.2.13676358**.
-- **Android Emulator** if you want to use an emulator.
+- **Android Emulator**, if you want an emulator.
 
-Use Android Studio's bundled **JDK 21** for Gradle. Its selection is under
+Accept the licenses for the components you install. Choose **JDK 21** under
 **Settings → Build, Execution, Deployment → Build Tools → Gradle → Gradle JDK**.
-The project uses Gradle 9.1.0 and Android Gradle Plugin 9.0.1.
+On macOS, Settings may be named Preferences. Android Studio's bundled JDK 21
+can be used. The project uses Gradle 9.1.0, Android Gradle Plugin 9.0.1, and Kotlin
+2.3.20; the wrapper downloads the correct Gradle version automatically.
 
-Open the IDE's terminal in the project root and run:
+Let the Gradle sync finish. Initial setup needs internet access to download
+Android and Maven dependencies.
 
-```sh
-flutter doctor -v
-flutter doctor --android-licenses
-flutter pub get --enforce-lockfile
-```
-
-Read and accept the Android licenses, then resolve Android toolchain errors
-reported by `flutter doctor`. Development on Windows or Linux can ignore a
-missing Xcode toolchain when testing Android.
-
-## 4. Choose your device
+## 3. Select a device
 
 For a physical phone, use Android 7.0/API 24 or newer. Enable Developer options
-and USB debugging in the phone's settings, connect it by USB, and accept the
-phone's debugging authorization prompt. A physical phone is best for camera,
-GPS, and compass tests.
+and USB debugging, connect it by USB, and accept the debugging authorization on
+the phone. Select the phone in Android Studio's device toolbar. A real phone is
+best for GPS, camera, and compass testing.
 
 For an emulator, open **Tools → Device Manager → Create Device**, choose a Pixel
-model, download an API 36 system image, and start the emulator. The demo can be
-tested without GPS or camera hardware; live heading support depends on the
+model, download an API 36 system image, and start it. The guest demo can run
+without physical sensor hardware. Live heading availability depends on the
 emulated sensors.
 
-Check that Flutter can see your selected device:
+## 4. Run the guest demo
+
+Select the **app** run configuration and your device, then click the green
+**Run ▶** button. On the welcome screen, select **Continue as guest**. Blank
+Supabase configuration opens the labeled offline demo. If the build is already
+configured for Live, choose **Profile → Settings → Use demo mode** to test the
+fictional samples while database setup is pending.
+
+Try the main flow:
+
+1. Open Home and tap **Scan for Restaurant**.
+2. Tap a restaurant marker to open its profile.
+3. Select **Navigate** and explore simulated route progress.
+4. Test the demo heading and movement controls.
+5. Open Profile and try Settings, Help, and Log out.
+
+Demo restaurant records and paths are fictional. They are for interaction
+testing and should not be followed as real walking directions.
+
+## 5. Create the live database and enable accounts
+
+Open your Supabase project dashboard, choose **SQL Editor → New query**, and
+paste the whole [supabase/setup.sql](../supabase/setup.sql) file. Select **Run**.
+The file includes the complete restaurant schema, the 1 km search RPC, private
+`public.profiles`, Auth profile creation/backfill, and the two supplied HALAL
+food courts. The SQL has passed local checks; the live database has not been
+created automatically. Its public client key cannot run table-creation SQL.
+
+Under **Authentication → Providers**, enable **Email** for email/password sign-in
+and account creation. Supabase Auth stores and verifies passwords. The public
+profile table stores display names and metadata rather than passwords. If email
+confirmation is enabled, confirm the account's email before signing in.
+
+Copy `supabase.properties.example` to root `supabase.properties` if that local
+file does not exist, then fill in:
+
+```properties
+SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+SUPABASE_PUBLISHABLE_KEY=YOUR_PUBLIC_PUBLISHABLE_KEY
+```
+
+The supplied project's URL is `https://oueafqgadqggyinpmyoi.supabase.co`. Keep its
+public publishable key in your ignored local properties file. The prepared APK
+may already contain this public configuration, but the dashboard SQL still
+needs to be applied. Never use a service-role key or database password in the
+Android app. No Google Maps or routing-provider key is required.
+
+Sync with Gradle, stop the app, and run it again after changing properties.
+Sign in or continue as guest, select **Scan for Restaurant**, and grant
+foreground location and camera permissions. Choose precise location when Android
+offers it. Discovery searches within 1 km of the real GPS location; Navigate
+requests walking directions through the public FOSSGIS pedestrian service.
+Live discovery and routing require internet.
+
+The two supplied records are:
+
+- **Cafe UMSKAL** — 5.280285448386224, 115.17640486697412 — HALAL.
+- **Anjung Selera Sungai Pagar** — 5.28381416215476, 115.17329350236913 — HALAL.
+
+Their names, coordinates, and HALAL flags were supplied by the project owner;
+ratings and opening hours are not verified. When the phone is outside the 1 km
+radius, an empty result is expected. The optional fictional Kuala Lumpur seed
+and offline demo are separate from these records. Use **Profile → Settings →
+Use demo mode** when you want to test the sample screens away from the food courts.
+
+To check accounts, create an account through the app and look for it under
+**Authentication → Users** in the dashboard. Its matching `public.profiles` row
+is created by the sign-up trigger. Guests do not create account/profile rows.
+Existing Auth accounts receive profiles when setup runs. Native sign-in sessions
+stay only in memory; sign in again after a process restart or expired session.
+
+## 6. Build an APK or run checks
+
+Use Android Studio's terminal in the project root. On macOS or Linux:
 
 ```sh
-flutter devices
+./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
 ```
 
-## 5. Run and test the guest demo
+On Windows PowerShell:
 
-Select the device in Android Studio's toolbar. Open `lib/main.dart` and click
-the green **Run ▶** button. You can also run `flutter run` in the terminal.
-
-On the welcome screen, choose **Continue as guest**. Without Supabase
-configuration, the app uses its labeled offline demo:
-
-1. Open Home and select **Scan for Restaurant**.
-2. Tap a restaurant marker to open the restaurant profile.
-3. Select **Navigate** to open a simulated journey.
-4. Adjust the demo heading control to turn the camera view.
-5. Move the Walk slider to simulate walking and arrival.
-6. Open Profile to find Settings, Help, and Log out.
-
-Demo restaurant records and paths are fictional. They are suitable for testing
-the screens and interactions, not for real walking directions.
-
-## 6. Connect live restaurant data
-
-Follow [the Supabase instructions](../supabase/README.md) to apply the restaurant
-migration and add nearby restaurant records. For optional account creation and
-sign-in, enable Supabase's email/password provider. Guests can read public
-restaurant data without an account.
-
-Copy `.env.example.json` to `env.local.json` in the project root and fill in:
-
-```json
-{
-  "SUPABASE_URL": "https://YOUR_PROJECT.supabase.co",
-  "SUPABASE_PUBLISHABLE_KEY": "YOUR_PUBLIC_PUBLISHABLE_KEY"
-}
+```powershell
+.\gradlew.bat :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
 ```
 
-Use the public publishable client key, never a service-role key or database
-password. No Google Maps or routing-provider key is needed. `env.local.json` is
-ignored by Git; Flutter build defines still become visible in the compiled app.
+Find the debug APK at `app/build/outputs/apk/debug/app-debug.apk`. It is signed for
+local development. Unit-test reports are under `app/build/reports/tests/`, and
+lint reports are under `app/build/reports/`.
 
-Open **Run → Edit Configurations**, select the Flutter configuration for
-`lib/main.dart`, and set **Additional run args** to:
-
-```text
---dart-define-from-file=env.local.json
-```
-
-Stop and restart the app so the build-time configuration takes effect. Select
-guest access or sign in, then tap **Scan for Restaurant**. Accept location and
-camera permissions. The app searches within 1 km of the phone's actual location;
-Navigate requests pedestrian directions from the public FOSSGIS routing service.
-Live discovery and routing need internet access.
-
-The sample seed data is near Kuala Lumpur. If your phone is elsewhere, add real
-nearby restaurant records or use the demo to test the sample screens. If a
-configured project has no restaurants within the radius, an empty result is
-expected.
-
-## If something does not work
+## Troubleshooting
 
 | Symptom | What to check |
 | --- | --- |
-| `flutter` command is missing | Add Flutter's `bin` folder to PATH and reopen Android Studio. |
-| Device is missing | Run `flutter devices`; authorize USB debugging or start the emulator. |
-| Android licenses or tools are missing | Install Command-line Tools in SDK Manager, then rerun the doctor and license commands. |
-| The app stays in Demo | Verify `env.local.json`, the run configuration flag, and perform a full restart. |
-| No nearby places | Check GPS permission, location services, internet, and restaurant coordinates within 1 km. |
-| Sign-in or account creation fails | Check the email/password provider and email confirmation settings in Supabase. |
-| Camera permission was denied | Allow camera access in the phone's app settings and retry the scan. |
-| No directional markers | Use a phone with a compass, check location/heading availability, and follow the displayed sensor guidance. |
-| Walking route fails | Check internet and retry later; the public service and local pedestrian-map coverage can vary. |
+| Git is missing | Install Git, restart Android Studio, and clone again. |
+| Gradle cannot find Java | Set Gradle JDK to JDK 21 in Android Studio settings. |
+| Android SDK is missing | Install SDK 36 and the listed tools through SDK Manager, then sync again. |
+| Device is missing | Start the emulator or authorize the phone's USB debugging prompt. |
+| The app opens Demo | Fill both public values in root `supabase.properties`, sync Gradle, rebuild, and turn off Use demo mode. |
+| No nearby restaurants | Run `supabase/setup.sql` in the SQL editor, then check GPS, internet, and the food courts being within 1 km. |
+| Sign-in or sign-up fails | Apply setup SQL, enable the email/password provider, and check email confirmation and credentials. |
+| Camera was denied | Allow camera access in the phone's app settings and retry. |
+| No heading or markers | Test on a compass-equipped phone and follow the app's sensor guidance. |
+| Walking route fails | Check internet and retry later; service availability and pedestrian-map coverage vary. |
 
-Camera guidance uses approximate GPS/compass bearings and does not detect
-obstacles or safe crossings. Validate it on a physical phone before relying on
-its alignment.
+Use a physical phone to validate live alignment and permissions. Camera guidance
+uses approximate GPS/compass bearings and does not detect obstacles or safe
+crossings.

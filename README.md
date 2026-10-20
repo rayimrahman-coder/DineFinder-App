@@ -1,132 +1,163 @@
 # DineFinder
 
-DineFinder is a Flutter app for finding restaurants within **1 km**, opening
-their profiles, and following walking directions through a camera compass.
-It includes a sign-in screen, guest access, a Home scan screen, and a Profile
-screen with Settings, Help, and Log out.
+DineFinder is a **native Android app written in Kotlin and Jetpack Compose**.
+It finds restaurants within **1 km**, opens restaurant profiles, and displays
+walking directions through a camera compass. The app includes email/password
+sign-in, account creation, guest access, Home scanning, and a Profile screen
+with Settings, Help, and Log out.
 
-Restaurant data and optional email/password accounts use Supabase. Walking
-directions use the public FOSSGIS OpenStreetMap pedestrian routing service.
-**No Google Maps, OpenRouteService, or paid routing API key is required.**
+Restaurant data and optional accounts use Supabase. Walking directions come
+from the public FOSSGIS OpenStreetMap pedestrian routing service. No Google Maps,
+OpenRouteService, or paid routing API key is required.
 
-## Run the app
+## Open and run
 
-Use Flutter **3.44.0** with Dart **3.12.0**. From the folder containing
-`pubspec.yaml`, run:
+Install Android Studio and open this repository's **root folder**, containing
+`settings.gradle.kts`, `gradlew`, and the `app` module. Let Gradle sync, select an
+Android device, and click **Run ▶** for the `app` configuration.
 
-```sh
-flutter pub get --enforce-lockfile
-flutter run
+The toolchain uses JDK 21, Gradle 9.1.0, Android Gradle Plugin 9.0.1, Kotlin
+2.3.20, and Android SDK 36. The minimum device version is Android 7.0/API 24.
+Install SDK Build-Tools 36.0.0 and Android SDK Platform-Tools through SDK Manager.
+
+For step-by-step cloning, device setup, and live configuration, see
+[the Android Studio guide](docs/ANDROID_STUDIO.md).
+
+## Try the guest demo
+
+Without Supabase configuration, select **Continue as guest** to use the labeled
+offline demo. Home displays a radar and **Scan for Restaurant**. Open a sample
+restaurant's profile and select **Navigate** to try simulated camera guidance
+and route progress. Profile contains Settings, Help, and Log out.
+
+The demo's Kuala Lumpur restaurants, ratings, addresses, schedules, and paths
+are fictional. They test the screens and interactions and do not represent real
+business listings or walkable streets. The demo works offline after installation.
+
+## Set up the live database
+
+The schema is provided in [supabase/setup.sql](supabase/setup.sql). Open your
+Supabase project in the dashboard, select **SQL Editor → New query**, paste that
+entire file, and select **Run**. This creates restaurant discovery, private user
+profiles, the sign-up trigger, and the two supplied food-court records. The SQL
+is idempotent and has been tested locally; applying it to the live project is
+still a user action. A public client key cannot create database tables.
+
+Supabase Auth manages email/password accounts and password security. The new
+`public.profiles` table stores each account's display name and metadata, with
+owner-only read/update access. Creating an Auth user creates its profile;
+existing users are backfilled. Guests can read public restaurant data without
+an Auth account or profile row. Enable the **email/password** provider under
+Supabase Authentication for sign-in and account creation. If email confirmation
+is enabled, confirm the email before signing in.
+
+Copy `supabase.properties.example` to the ignored root file
+`supabase.properties` if it does not already exist. Set your project URL and
+public publishable client key:
+
+```properties
+SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+SUPABASE_PUBLISHABLE_KEY=YOUR_PUBLIC_PUBLISHABLE_KEY
 ```
 
-Choose a connected Android phone or an Android emulator. For a web demo, use
-`flutter run -d chrome`. The Android minimum SDK is 24; iOS targets 15.0 and
-requires macOS, Xcode, and CocoaPods.
+Sync Gradle and rebuild after changing configuration. The client key is included
+in the compiled app; use only the public publishable key. Keep service-role keys
+and database passwords out of the app. Blank configuration opens the offline
+guest demo. A build with project configuration opens Live; the database setup
+must be completed before testing live accounts or restaurant reads. Guests can
+also select **Profile → Settings → Use demo mode** to test the fictional samples.
 
-See [the Android Studio guide](docs/ANDROID_STUDIO.md) for cloning the project,
-installing the SDK tools, selecting a device, and configuring live data.
+The setup includes these user-supplied locations:
 
-## Try it without configuration
+| Food court | Latitude | Longitude | Supplied status |
+| --- | --- | --- | --- |
+| Cafe UMSKAL | 5.280285448386224 | 115.17640486697412 | HALAL |
+| Anjung Selera Sungai Pagar | 5.28381416215476 | 115.17329350236913 | HALAL |
 
-Select **Continue as guest** on the welcome screen. Without a Supabase connection,
-the app opens the clearly labeled demo. Home shows the nearby radar; select
-**Scan for Restaurant** to explore sample places and their profiles. Tap
-**Navigate** to try the simulated camera directions. The demo heading and Walk
-controls simulate turning a phone, moving along a route, and arriving.
+Names, coordinates, and HALAL status came from the project owner. No verified
+rating, opening hours, address, or pricing was supplied. The fictional Kuala
+Lumpur demo collection is separate from these live records.
 
-The demo works offline after installation. Its six Kuala Lumpur restaurants,
-ratings, addresses, schedules, and route geometry are fictional samples. They
-are not real business listings or walkable street directions.
+In Live mode, **Scan for Restaurant** requests foreground location and camera
+access and queries Supabase within 1 km of the phone's actual coordinates.
+Tapping a marker opens its profile. **Navigate** requests pedestrian directions
+without a routing key. Live discovery and navigation need internet access; the
+two food courts appear only when they fall within the search radius. For more
+setup and verification steps, see [the database guide](supabase/README.md).
 
-## Connect restaurant data and accounts
+The app uses Supabase HTTPS REST and Auth endpoints. Signed-in sessions are kept
+in memory; passwords and session tokens are not persisted. Sign in again after
+restarting the process or when the session expires.
 
-Follow [the Supabase setup instructions](supabase/README.md) to create the
-restaurant table and radius-search function. Optional email/password sign-in
-uses Supabase Auth; guests can read public restaurant data without an account.
-No anonymous sign-in or routing Edge Function is required.
+## Camera guidance and privacy
 
-Copy `.env.example.json` to the ignored file `env.local.json` and supply your
-project URL and **public publishable client key**:
+CameraX supplies the camera view, Android LocationManager supplies foreground
+location, and SensorManager supplies heading information. Markers estimate the
+bearing to each restaurant. Navigation follows the route's next point, with
+walking instructions and progress. This is an approximate **GPS/compass overlay**;
+it does not track world anchors, detect obstacles, or identify safe crossings.
+Use the written directions and remain aware of your surroundings.
 
-```json
-{
-  "SUPABASE_URL": "https://YOUR_PROJECT.supabase.co",
-  "SUPABASE_PUBLISHABLE_KEY": "YOUR_PUBLIC_PUBLISHABLE_KEY"
-}
-```
+A physical Android phone is the primary live target. Camera, location, and
+compass behavior depend on device hardware, permissions, accuracy, and
+calibration. The emulator is useful for the demo and UI testing. Foreground
+sensors and camera resources are released when the app is no longer active.
 
-Then start the app with:
+Nearby-search coordinates go to Supabase. Selecting Navigate sends route
+endpoints to `routing.openstreetmap.de`. Camera frames stay on the device. Public
+routing has usage limits and may be unavailable; the app must report route
+failures rather than replace them with demo geometry. Paths depend on
+OpenStreetMap's pedestrian coverage.
 
-```sh
-flutter run --dart-define-from-file=env.local.json
-```
-
-Supabase needs its public client key even for public reads. This is client
-configuration, not an admin secret; Flutter build defines are visible in the
-distributed app. Never include a service-role key or database password. The
-older `SUPABASE_ANON_KEY` define is also accepted for existing configurations.
-
-With a configured project, **Scan for Restaurant** requests foreground GPS and
-camera access, searches nearby Supabase records within 1 km, and displays
-restaurant markers according to their bearings. A marker opens the restaurant's
-profile. **Navigate** requests a real pedestrian route without a routing key.
-Live mode needs internet access and restaurant records near the device's actual
-location. Fictional seed data near Kuala Lumpur will not appear outside its
-geographic search radius.
-
-## Camera guidance, data, and privacy
-
-The camera view is a **GPS/compass overlay**, not ARCore/ARKit world anchoring.
-Markers estimate restaurant directions; the navigation arrow points toward the
-next route vertex. Walking instructions, remaining distance, off-route
-recalculation, and arrival detection accompany the overlay. Buildings, obstacles,
-and safe crossings are not detected. Use the written route instructions and stay
-aware of your surroundings.
-
-A physical phone is the primary target for live GPS, camera, and compass tests.
-Web camera and location require HTTPS or local development; browser heading
-support varies. Live directional markers and arrows are withheld when a heading
-is unavailable. Backgrounding the app releases the camera and pauses sensors;
-resuming reconnects them.
-
-Nearby-search coordinates go to Supabase. Selecting Navigate sends the route's
-origin and destination to `routing.openstreetmap.de`. Camera frames remain on
-the device. The public pedestrian routing service has usage limits and may be
-unavailable; route failures are shown as errors and never replaced with demo
-geometry. Routes depend on the pedestrian paths available in OpenStreetMap.
-
-Routing is provided by FOSSGIS. Routing data is © [OpenStreetMap
+Routing is provided by FOSSGIS. Data is © [OpenStreetMap
 contributors](https://www.openstreetmap.org/copyright), available under the
 [Open Database License](https://opendatacommons.org/licenses/odbl/1-0/).
 
-## Checks
+## Build and check
+
+From the repository root on macOS or Linux:
 
 ```sh
-flutter analyze
-flutter test
-flutter build web --no-web-resources-cdn
-flutter build apk --debug
+./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
+```
+
+On Windows PowerShell:
+
+```powershell
+.\gradlew.bat :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
+```
+
+The debug APK is written to:
+
+```text
+app/build/outputs/apk/debug/app-debug.apk
+```
+
+Verified: the native debug APK build, all **29 unit tests**, Android lint, and
+the local PostGIS integration checks pass. The APK signature and permissions
+were checked, and the APK includes the supplied public Supabase configuration.
+
+Unit tests use fixtures and mocked responses. They do not establish live
+Supabase authentication, email delivery, public routing availability, or physical
+GPS/camera/compass behavior. Inspect the Gradle test and lint reports for the
+current run before claiming validation. Debug signing is for local testing;
+configure production signing before distributing a release.
+
+The retained restaurant migration can be checked in a disposable database:
+
+```sh
 bash supabase/tests/run-postgis.sh
 ```
 
-Verified with Flutter 3.44.0: analysis passes, all 39 Flutter tests pass, and the
-web release and Android debug APK builds succeed. The APK's signature and
-camera/location permissions were checked; unused microphone and shared-storage
-permissions are excluded. Flutter tests exercise data parsing, geospatial
-calculations, route progress, account lifecycle, and app interactions.
-The database check uses a disposable pinned PostGIS Docker
-image to check the schema, search radius, coordinate validation, sorting, and
-public read-only access. Mocked service tests do not establish live provider
-availability, account email delivery, or physical-device behavior.
-
-Native Android/iOS release builds and real GPS/camera/compass behavior require
-device validation. Replace Android's development signing configuration with
-your production signing setup before store distribution.
+That check requires Docker and validates the schema, radius boundaries,
+coordinate validation, ordering, public read-only restaurant access, private profile RLS, sign-up triggers,
+backfills, and setup idempotence. It does not deploy a Supabase project.
 
 ## Project layout
 
-- `lib/app/`: sign-in, guest access, Home scan, profiles, camera, and journey screens.
-- `lib/device/`: foreground location, rear camera, compass, permissions, and lifecycle.
-- `lib/core/`: restaurant data, pedestrian routing, and geospatial calculations.
-- `supabase/`: restaurant schema, fictional seed data, and database checks.
-- `android/`, `ios/`, `web/`: platform projects and permission declarations.
+- `app/src/main/java/`: Kotlin app, Compose screens, services, sensors, and routing.
+- `app/src/main/res/`: Android resources and application styling.
+- `app/src/test/`: native unit tests.
+- `supabase/setup.sql`: single-paste live schema, private profiles, and supplied food courts.
+- `supabase/`: versioned migrations, separate fictional seed data, and database checks.
+- `docs/ANDROID_STUDIO.md`: Android Studio setup and testing instructions.
