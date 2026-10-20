@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="app_primary">#A4D5BA</color>
+    <color name="google_maps_attribution">#FFFFFF</color>
+    <color name="app_background">#121916</color>
+    <color name="ar_surface">#1A231F</color>
+    <color name="ar_overlay_surface">#F71A231F</color>
+    <color name="ar_surface_variant">#29352F</color>
+    <color name="ar_round_button">#29352F</color>
+    <color name="ar_sheet_handle">#46554D</color>
+    <color name="ar_text">#E5ECE7</color>
+    <color name="ar_text_muted">#C3CEC7</color>
+    <color name="ar_text_secondary">#C3CEC7</color>
+    <color name="ar_text_button">#E5ECE7</color>
+    <color name="ar_success">#9ED9AF</color>
+    <color name="ar_arrival_success">#9ED9AF</color>
+    <color name="ar_rating">#EDC46E</color>
+    <color name="ar_outline">#46554D</color>
+    <color name="ar_button_primary">#A4D5BA</color>
+    <color name="ar_on_button_primary">#173F36</color>
+    <color name="ar_button_secondary">#29352F</color>
+    <color name="ar_marker_surface">#1A231F</color>
+    <color name="ar_marker_tint">#A4D5BA</color>
+    <color name="ar_marker_outline">#8D9B92</color>
+    <color name="ar_marker_selected">#A4D5BA</color>
+    <color name="ar_on_marker_selected">#173F36</color>
+</resources>

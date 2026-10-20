@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/discoveryRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/ar_camera_background">
+
+    <FrameLayout
+        android:id="@+id/discoverySceneContainer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <FrameLayout
+        android:id="@+id/discoveryMarkers"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <TextView
+        android:id="@+id/discoveryBack"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_gravity="top|start"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:background="@drawable/discovery_round_button"
+        android:contentDescription="@string/restaurant_back"
+        android:elevation="10dp"
+        android:gravity="center"
+        android:text="‹"
+        android:textColor="@color/ar_text_button"
+        android:textSize="30sp" />
+
+    <LinearLayout
+        android:id="@+id/discoveryControls"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginBottom="28dp"
+        android:gravity="center_horizontal"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/discoveryOverflowHint"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:background="@drawable/discovery_hint_background"
+            android:paddingHorizontal="18dp"
+            android:paddingVertical="10dp"
+            android:gravity="center"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:textColor="@color/ar_hint_text"
+            android:textSize="13sp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/discoveryHint"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/discovery_hint_background"
+            android:paddingHorizontal="18dp"
+            android:paddingVertical="10dp"
+            android:minHeight="48dp"
+            android:elevation="8dp"
+            android:gravity="center"
+            android:text="@string/restaurant_scan_locating"
+            android:textColor="@color/ar_hint_text"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/discoverySetupHint"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/discovery_hint_background"
+            android:paddingHorizontal="18dp"
+            android:paddingVertical="10dp"
+            android:minHeight="48dp"
+            android:elevation="8dp"
+            android:gravity="center"
+            android:text="@string/restaurant_scan_setup_key"
+            android:textColor="@color/ar_hint_text"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/discoveryAttribution"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/discovery_overlay_background"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="6dp"
+            android:elevation="4dp"
+            android:gravity="center"
+            android:singleLine="true"
+            android:text="@string/restaurant_scan_google_attribution"
+            android:textColor="@color/google_maps_attribution"
+            android:textSize="12sp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/discoveryProviderAttribution"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:background="@drawable/discovery_overlay_background"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="6dp"
+            android:elevation="4dp"
+            android:gravity="center"
+            android:textColor="@color/ar_text_secondary"
+            android:textColorLink="@color/app_primary"
+            android:textSize="12sp"
+            android:visibility="gone" />
+    </LinearLayout>
+</FrameLayout>

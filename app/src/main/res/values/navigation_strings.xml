@@ -1,0 +1,56 @@
+<resources>
+    <string name="navigation_invalid_destination">Cannot start navigation: select a restaurant with a valid name and location.</string>
+    <string name="navigation_to_restaurant">To %1$s</string>
+    <string name="navigation_direction_to_restaurant">Waiting for a walking route</string>
+    <string name="navigation_waiting_location">Waiting for location</string>
+    <string name="navigation_waiting_location_hint">Waiting for your location. Make sure location is turned on.</string>
+    <string name="navigation_permission_needed">Location permission needed</string>
+    <string name="navigation_permission_hint">Allow precise location to get directions and distance.</string>
+    <string name="navigation_location_unavailable">Could not get your location. Check location settings and try again.</string>
+    <string name="navigation_loading_route">Finding a pedestrian route&#8230; The arrow appears after the walking path is ready.</string>
+    <string name="navigation_route_loaded">Walking route loaded. Walking directions are in beta and may miss sidewalks or pedestrian paths. Use caution.</string>
+    <string name="navigation_google_maps_attribution" translatable="false">Google Maps</string>
+    <string name="navigation_route_unavailable">Walking route unavailable. The arrow is hidden. Retry to request a pedestrian route.</string>
+    <string name="navigation_straight_line_distance">Straight-line\ndistance</string>
+    <string name="navigation_distance_meters">%1$d m</string>
+    <string name="navigation_unknown_distance">-- m</string>
+    <string name="navigation_retry_route">Retry route</string>
+    <string name="navigation_enable_location">Enable location</string>
+    <string name="navigation_retry_location">Retry location</string>
+    <string name="navigation_api_key_required">Add your Google Maps Platform API key in Settings to load walking routes. The arrow stays hidden until a walking route is available.</string>
+    <string name="navigation_open_settings">Open Settings</string>
+    <string name="navigation_api_identity_unavailable">Could not read this app\'s signing identity. Open Settings and Help to check API key setup. The arrow stays hidden until a walking route is available.</string>
+    <string name="navigation_api_request_rejected">Google rejected the route request. Check Routes API, billing, and your API key setup in Settings and Help. The arrow stays hidden until a walking route is available.</string>
+    <string name="navigation_api_key_rejected">Google rejected your API key. Check that Routes API and billing are enabled and that key restrictions match this installed app. Open Settings and Help. The arrow stays hidden until a walking route is available.</string>
+    <string name="navigation_route_quota_exceeded">Google Routes quota or rate limit reached. Check your project\'s quotas and billing, then retry. The arrow stays hidden until a walking route is available.</string>
+    <string name="navigation_no_walking_route">Google Maps could not find a walking route here. The arrow stays hidden until a walking route is available.</string>
+    <string name="navigation_route_network_error">Could not connect to Google Routes. Check your internet connection and retry. The arrow stays hidden until a walking route is available.</string>
+    <string name="navigation_back">Back to restaurant</string>
+    <string name="navigation_camera_permission_needed">Camera permission needed</string>
+    <string name="navigation_camera_permission_hint">Allow camera access and precise location to use camera navigation.</string>
+    <string name="navigation_camera_unavailable">Camera preview unavailable. Retry camera navigation.</string>
+    <string name="navigation_retry_camera">Retry camera</string>
+    <string name="navigation_enable_permissions">Allow camera and location</string>
+    <string name="navigation_location_off">Location is off. Turn it on to resume navigation.</string>
+    <string name="navigation_precise_fix_needed">Waiting for a fresh GPS fix accurate to 25 m or better. The arrow stays hidden until your location is reliable.</string>
+    <string name="navigation_compass_needed">Hold the phone toward the path and move it slowly to calibrate the compass. The arrow appears with fresh camera, compass, and GPS data.</string>
+    <string name="navigation_waiting_camera">Waiting for a live camera preview. The arrow stays hidden until new camera frames arrive.</string>
+    <string name="navigation_follow_route">Follow the walking route</string>
+    <string name="navigation_remaining_step">%1$d m along this route segment</string>
+    <string name="navigation_remaining_path">%1$d m remaining on the walking path</string>
+    <string name="navigation_off_route">You are off the walking route</string>
+    <string name="navigation_off_route_hint">The arrow is hidden to avoid misleading directions. Find a new walking route from your current location.</string>
+    <string name="navigation_reroute">Find route from here</string>
+    <string name="navigation_route_end">Walking route ends here</string>
+    <string name="navigation_route_end_hint">You have reached the end of the mapped walking path. Check your surroundings for the restaurant entrance.</string>
+    <string name="navigation_route_required">Walking route needed</string>
+    <string name="navigation_route_geometry_unavailable">The walking path could not be verified. The arrow is hidden. Find a new route from your current location.</string>
+    <string name="navigation_continue_path" translatable="false">Continue along path</string>
+    <string name="navigation_continue_straight">Continue straight</string>
+    <string name="navigation_continue_straight_distance">Continue straight for %1$d m</string>
+    <string name="navigation_current_maneuver">Now: %1$s</string>
+    <string name="navigation_junction_maneuver">At the junction: %1$s</string>
+    <string name="navigation_then_turn">Then in %1$d m: %2$s</string>
+    <string name="navigation_then_at_junction">Next junction: %1$s</string>
+    <string name="navigation_current_step_caption">%1$s\nCurrent walking step</string>
+</resources>

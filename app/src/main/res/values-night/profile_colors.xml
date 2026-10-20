@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="profile_background">#111C16</color>
+    <color name="profile_surface">#1B2921</color>
+    <color name="profile_ink">#EDF4ED</color>
+    <color name="profile_muted">#B2C0B4</color>
+    <color name="profile_accent">#B7DDBB</color>
+    <color name="profile_on_accent">#183C28</color>
+    <color name="profile_soft">#283C2E</color>
+    <color name="profile_outline">#344B3A</color>
+    <color name="profile_rating_bg">#433B25</color>
+    <color name="profile_rating_ink">#E9D28D</color>
+    <bool name="profile_light_system_bars">false</bool>
+</resources>

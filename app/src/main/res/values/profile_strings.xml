@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="restaurant_profile_title" translatable="false">Restaurant</string>
+    <string name="restaurant_profile_back" translatable="false">Back</string>
+    <string name="restaurant_profile_invalid" translatable="false">This restaurant has no valid navigation location.</string>
+    <string name="restaurant_profile_type" translatable="false">Restaurant type</string>
+    <string name="restaurant_profile_rating_title" translatable="false">Rating</string>
+    <string name="restaurant_profile_halal_title" translatable="false">Halal status</string>
+    <string name="restaurant_profile_distance_title" translatable="false">Distance &amp; Address</string>
+    <string name="restaurant_profile_hours_title" translatable="false">Hours &amp; Price</string>
+    <string name="restaurant_profile_category_unknown" translatable="false">Not available</string>
+    <string name="restaurant_profile_halal" translatable="false">Halal</string>
+    <string name="restaurant_profile_not_halal" translatable="false">Not halal</string>
+    <string name="restaurant_profile_halal_unknown" translatable="false">Unknown</string>
+    <string name="restaurant_profile_rating" translatable="false">%1$.1f / 5</string>
+    <string name="restaurant_profile_rating_count" translatable="false">%1$.1f / 5 · %2$d ratings</string>
+    <string name="restaurant_profile_rating_unknown" translatable="false">Not available</string>
+    <string name="restaurant_profile_google_attribution" translatable="false">Google Maps</string>
+    <string name="restaurant_profile_provider" translatable="false">Provided by %1$s</string>
+    <string name="restaurant_profile_navigate" translatable="false">Get directions</string>
+    <string name="restaurant_profile_online_loading" translatable="false">Loading restaurant info…</string>
+    <string name="restaurant_profile_online_key" translatable="false">Add an API key in Settings to load missing info.</string>
+    <string name="restaurant_profile_online_config" translatable="false">Online info unavailable. Check your API key in Settings.</string>
+    <string name="restaurant_profile_online_quota" translatable="false">Online info unavailable. Service limit reached.</string>
+    <string name="restaurant_profile_online_network" translatable="false">Restaurant info could not be loaded.</string>
+    <string name="restaurant_profile_online_missing" translatable="false">No additional info available.</string>
+    <string name="restaurant_profile_link_unavailable" translatable="false">This link could not be opened.</string>
+</resources>

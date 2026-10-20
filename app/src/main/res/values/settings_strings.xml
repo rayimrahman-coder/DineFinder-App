@@ -1,0 +1,26 @@
+<resources>
+    <string name="settings_title" translatable="false">Settings</string>
+    <string name="settings_back" translatable="false">Back to Profile</string>
+    <string name="settings_profile" translatable="false">Profile</string>
+    <string name="settings_username" translatable="false">Username</string>
+    <string name="settings_username_description" translatable="false">Your name on Home and Profile.</string>
+    <string name="settings_username_limit" translatable="false">Up to %1$d characters</string>
+    <string name="settings_save_username" translatable="false">Save username</string>
+    <string name="settings_username_saved" translatable="false">Username saved</string>
+    <string name="settings_appearance" translatable="false">Appearance</string>
+    <string name="settings_dark_mode" translatable="false">Dark mode</string>
+    <string name="settings_dark_mode_description" translatable="false">Use a darker appearance throughout the app.</string>
+    <string name="settings_google_maps" translatable="false">Google Maps API</string>
+    <string name="settings_api_key" translatable="false">API key</string>
+    <string name="settings_api_key_description" translatable="false">Add your Google Maps key for nearby restaurant search, ratings and walking routes. Your key stays on this device.</string>
+    <string name="settings_api_key_not_saved" translatable="false">No API key saved</string>
+    <string name="settings_api_key_saved_hint" translatable="false">Saved on this device. Google checks the key when you search for restaurants or request a route.</string>
+    <string name="settings_api_key_saved" translatable="false">API key saved</string>
+    <string name="settings_api_key_removed" translatable="false">API key removed</string>
+    <string name="settings_save_api_key" translatable="false">Save API key</string>
+    <string name="settings_remove_api_key" translatable="false">Remove</string>
+    <string name="settings_show_api_key" translatable="false">Show API key</string>
+    <string name="settings_hide_api_key" translatable="false">Hide API key</string>
+    <string name="settings_api_key_tutorial" translatable="false">How to set up your own API key</string>
+    <string name="settings_back_to_navigation" translatable="false">Back to navigation</string>
+</resources>

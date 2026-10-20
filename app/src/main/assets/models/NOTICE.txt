@@ -1,0 +1,12 @@
+Direction Arrow
+Author: Alihan (https://sketchfab.com/Dare0)
+Source: https://sketchfab.com/3d-models/direction-arrow-6ef46718c7b242e39fcad7f27ee858a5
+License: Creative Commons Attribution 4.0 International (CC BY 4.0)
+https://creativecommons.org/licenses/by/4.0/
+
+The author, title, source and license above are preserved from arrow.glb's
+embedded asset metadata. The GLB file is distributed unchanged. DineFinder's
+on-screen presentation applies centering, scaling, rotation and lighting to
+display the model for the current walking-route action.
+
+The original asset metadata identifies its generator as Sketchfab-14.32.1.

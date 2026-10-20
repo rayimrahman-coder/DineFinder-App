@@ -1,0 +1,24 @@
+<resources>
+    <string name="restaurant_scan_permissions" translatable="false">Allow camera and precise location to find restaurants within 1 km</string>
+    <string name="restaurant_scan_location_required" translatable="false">Enable precise location to find restaurants within 1 km</string>
+    <string name="restaurant_scan_locating" translatable="false">Finding your location…</string>
+    <string name="restaurant_scan_location_unavailable" translatable="false">Location unavailable. Tap to try again.</string>
+    <string name="restaurant_scan_location_inaccurate" translatable="false">Waiting for a more accurate location…</string>
+    <string name="restaurant_scan_camera_starting" translatable="false">Starting camera preview…</string>
+    <string name="restaurant_scan_camera_unavailable" translatable="false">Camera unavailable. Tap to try again.</string>
+    <string name="restaurant_scan_calibration_unavailable" translatable="false">Camera calibration is unavailable on this device. Nearby markers cannot be positioned accurately.</string>
+    <string name="restaurant_scan_orientation_unavailable" translatable="false">Camera direction unavailable on this device</string>
+    <string name="restaurant_scan_orientation_uncertain" translatable="false">Calibrate your compass to find nearby restaurants</string>
+    <string name="restaurant_scan_searching" translatable="false">Point your camera around to find restaurants within 1 km</string>
+    <string name="restaurant_scan_no_nearby" translatable="false">No restaurants within 1 km</string>
+    <string name="restaurant_scan_no_local_nearby" translatable="false">No saved restaurants within 1 km</string>
+    <string name="restaurant_scan_marker" translatable="false">%1$s, %2$d meters away</string>
+    <string name="restaurant_scan_card_overflow" translatable="false">Restaurants shown: %1$d / %2$d</string>
+    <string name="restaurant_scan_camera_required" translatable="false">Allow camera access to find restaurants</string>
+    <string name="restaurant_scan_setup_key" translatable="false">Saved restaurants work offline. Tap to add a Google Maps API key for more nearby places.</string>
+    <string name="restaurant_scan_key_rejected" translatable="false">Google search is unavailable. Tap to check your API key in Settings.</string>
+    <string name="restaurant_scan_quota" translatable="false">Google search limit reached. Showing available restaurants.</string>
+    <string name="restaurant_scan_network" translatable="false">Could not load Google restaurants. Showing available restaurants.</string>
+    <string name="restaurant_scan_search_loading" translatable="false">Looking for nearby restaurants…</string>
+    <string name="restaurant_scan_google_attribution" translatable="false">Google Maps</string>
+</resources>
