@@ -1,4 +1,17 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">DineFinder</string>
+    <string name="app_name" translatable="false">DineFinder</string>
+    <string name="instruction_locating" translatable="false">Locating path&#8230;</string>
+    <string name="distance_format" translatable="false">Distance: %1$d m</string>
+    <string name="direction_arrive" translatable="false">ARRIVE</string>
+    <string name="direction_straight" translatable="false">Go Straight</string>
+    <string name="direction_slight_right" translatable="false">Slight Right</string>
+    <string name="direction_turn_right" translatable="false">Turn Right</string>
+    <string name="direction_u_turn" translatable="false">U-Turn</string>
+    <string name="direction_turn_left" translatable="false">Turn Left</string>
+    <string name="direction_slight_left" translatable="false">Slight Left</string>
+    <string name="restaurant_loading_hint" translatable="false">Loading restaurants&#8230;</string>
+    <string name="restaurant_load_error" translatable="false">Could not load restaurant information</string>
+    <string name="restaurant_back" translatable="false">Back</string>
+    <string name="restaurant_close_details" translatable="false">Close restaurant details</string>
+    <string name="restaurant_distance_meters" translatable="false">%1$d m away</string>
 </resources>

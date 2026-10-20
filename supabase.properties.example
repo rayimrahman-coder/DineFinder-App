@@ -1,4 +1,0 @@
-# Public client configuration only. Copy to ignored supabase.properties.
-# Never put a Supabase service-role key or database password in an Android app.
-SUPABASE_URL=
-SUPABASE_PUBLISHABLE_KEY=
