@@ -82,19 +82,25 @@ class CameraStage extends StatelessWidget {
                 right: 16,
                 child: Row(
                   children: [
-                    _GlassPill(
-                      icon: isDemo
-                          ? Icons.science_outlined
-                          : Icons.videocam_outlined,
-                      label: isDemo ? 'SIMULATED VIEW' : 'LIVE CAMERA',
-                      color: isDemo ? const Color(0xFFF2BD58) : Colors.white,
+                    Flexible(
+                      flex: 3,
+                      child: _GlassPill(
+                        icon: isDemo
+                            ? Icons.science_outlined
+                            : Icons.videocam_outlined,
+                        label: isDemo ? 'SIMULATED VIEW' : 'LIVE CAMERA',
+                        color: isDemo ? const Color(0xFFF2BD58) : Colors.white,
+                      ),
                     ),
-                    const Spacer(),
-                    _GlassPill(
-                      icon: Icons.explore_outlined,
-                      label: heading == null
-                          ? 'NO HEADING'
-                          : '${heading!.round()}°',
+                    const SizedBox(width: 8),
+                    Flexible(
+                      flex: 2,
+                      child: _GlassPill(
+                        icon: Icons.explore_outlined,
+                        label: heading == null
+                            ? 'NO HEADING'
+                            : '${heading!.round()}°',
+                      ),
                     ),
                   ],
                 ),
@@ -198,10 +204,12 @@ class CameraStage extends StatelessWidget {
                   ),
                 ),
               if (target == null && heading != null && visible.isEmpty)
-                const Center(
+                Center(
                   child: _GlassPill(
                     icon: Icons.screen_rotation_alt,
-                    label: 'TURN TO FIND NEARBY PLACES',
+                    label: restaurants.isEmpty
+                        ? 'NO RESTAURANTS IN THIS SCAN'
+                        : 'TURN TO FIND NEARBY PLACES',
                   ),
                 ),
               Positioned(

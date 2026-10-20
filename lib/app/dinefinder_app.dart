@@ -6,8 +6,11 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/dinefinder_core.dart';
 import '../device/device_session.dart';
+import 'account_gate.dart';
+import 'widgets/account_screens.dart';
 import 'widgets/camera_stage.dart';
 import 'widgets/discovery_widgets.dart';
+import 'widgets/scan_home.dart';
 
 const _ink = Color(0xFF123F3A);
 const _muted = Color(0xFF6C7A74);
@@ -20,11 +23,19 @@ class DineFinderApp extends StatelessWidget {
     this.client,
     this.demoRepository = const DemoRestaurantRepository(),
     this.demoRouteService = const DemoRouteService(),
+    this.startAsGuest = false,
+    this.deviceFactory,
+    this.liveRepository,
+    this.liveRouteService,
   });
 
   final SupabaseClient? client;
   final RestaurantRepository demoRepository;
   final RouteService demoRouteService;
+  final bool startAsGuest;
+  final DeviceSession Function()? deviceFactory;
+  final RestaurantRepository? liveRepository;
+  final RouteService? liveRouteService;
 
   @override
   Widget build(BuildContext context) => MaterialApp(
@@ -67,20 +78,38 @@ class DineFinderApp extends StatelessWidget {
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: Colors.white,
-        indicatorColor: const Color(0xFFE3EDE5),
-        labelTextStyle: WidgetStateProperty.all(
-          const TextStyle(
-            color: _ink,
+        indicatorColor: Colors.transparent,
+        iconTheme: WidgetStateProperty.resolveWith(
+          (states) => IconThemeData(
+            color: states.contains(WidgetState.selected)
+                ? const Color(0xFF245B50)
+                : _muted,
+          ),
+        ),
+        labelTextStyle: WidgetStateProperty.resolveWith(
+          (states) => TextStyle(
+            color: states.contains(WidgetState.selected)
+                ? const Color(0xFF245B50)
+                : _muted,
             fontWeight: FontWeight.w600,
-            fontSize: 12,
+            fontSize: 13,
+            letterSpacing: .5,
           ),
         ),
       ),
     ),
-    home: _Home(
+    home: AccountGate(
       client: client,
-      demoRepository: demoRepository,
-      demoRouteService: demoRouteService,
+      initialGuest: startAsGuest,
+      builder: (account) => _Home(
+        client: client,
+        account: account,
+        demoRepository: demoRepository,
+        demoRouteService: demoRouteService,
+        deviceFactory: deviceFactory,
+        liveRepository: liveRepository,
+        liveRouteService: liveRouteService,
+      ),
     ),
   );
 }
@@ -90,10 +119,18 @@ class _Home extends StatefulWidget {
     required this.client,
     required this.demoRepository,
     required this.demoRouteService,
+    required this.account,
+    this.deviceFactory,
+    this.liveRepository,
+    this.liveRouteService,
   });
   final SupabaseClient? client;
   final RestaurantRepository demoRepository;
   final RouteService demoRouteService;
+  final AccountSession account;
+  final DeviceSession Function()? deviceFactory;
+  final RestaurantRepository? liveRepository;
+  final RouteService? liveRouteService;
 
   @override
   State<_Home> createState() => _HomeState();
@@ -101,12 +138,15 @@ class _Home extends StatefulWidget {
 
 class _HomeState extends State<_Home> {
   late final DeviceSession _device;
+  late final RouteService _walkingRoutes;
   final _search = TextEditingController();
   var _live = false;
   var _loading = true;
   var _routing = false;
   var _tab = 0;
-  var _radius = 1000.0;
+  var _scanOpen = false;
+  var _scanView = 0;
+  static const _radius = 1000.0;
   var _cuisine = 'All';
   var _demoHeading = 35.0;
   var _demoProgress = 0.0;
@@ -130,20 +170,27 @@ class _HomeState extends State<_Home> {
   @override
   void initState() {
     super.initState();
-    _device = DeviceSession()..addListener(_sensorChanged);
-    unawaited(_reload());
+    _device = (widget.deviceFactory?.call() ?? DeviceSession())
+      ..addListener(_sensorChanged);
+    _walkingRoutes = widget.liveRouteService ?? OpenStreetMapRouteService();
+    _live = widget.client != null || widget.liveRepository != null;
+    _loading = false;
   }
 
   @override
   void dispose() {
     _device.removeListener(_sensorChanged);
     _device.dispose();
+    if (widget.liveRouteService == null &&
+        _walkingRoutes is OpenStreetMapRouteService) {
+      _walkingRoutes.close();
+    }
     _search.dispose();
     super.dispose();
   }
 
   void _sensorChanged() {
-    if (!mounted || !_live) return;
+    if (!mounted || !_live || !_scanOpen) return;
     setState(() {});
     final point = _device.position;
     if (point == null || _loading) return;
@@ -157,6 +204,7 @@ class _HomeState extends State<_Home> {
   }
 
   Future<void> _reload() async {
+    if (!mounted) return;
     final center = _position;
     if (center == null) return;
     final generation = ++_loadGeneration;
@@ -168,7 +216,8 @@ class _HomeState extends State<_Home> {
     _lastQueryTime = DateTime.now();
     try {
       final repository = _live
-          ? SupabaseRestaurantRepository(widget.client!)
+          ? (widget.liveRepository ??
+                SupabaseRestaurantRepository(widget.client!))
           : widget.demoRepository;
       final places = await repository
           .nearby(center, _radius)
@@ -189,16 +238,16 @@ class _HomeState extends State<_Home> {
   }
 
   Future<void> _changeMode(bool live) async {
+    if (!mounted) return;
     if (live == _live) return;
-    if (live && widget.client == null) {
+    if (live && widget.client == null && widget.liveRepository == null) {
       await showDialog<void>(
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('Live discovery is not connected'),
           content: const Text(
-            'This version is running with sample places. '
-            'Live discovery needs a restaurant database connection. '
-            'You can explore every screen in the demo.',
+            'You can explore the sample restaurants in demo mode. '
+            'Live restaurant data needs a connected Supabase project.',
           ),
           actions: [
             TextButton(
@@ -210,31 +259,6 @@ class _HomeState extends State<_Home> {
       );
       return;
     }
-    if (live) {
-      final proceed = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Find good food around you'),
-          content: const Text(
-            'DineFinder uses your foreground location to find restaurants '
-            'and the camera and compass to show their directions. '
-            'Camera images stay on your device. You can return to the demo at any time.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Later'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Continue'),
-            ),
-          ],
-        ),
-      );
-      if (proceed != true || !mounted) return;
-    }
-    if (!mounted) return;
     _loadGeneration++;
     _routeGeneration++;
     setState(() {
@@ -250,16 +274,80 @@ class _HomeState extends State<_Home> {
       _lastQueryCenter = null;
       _lastQueryTime = null;
     });
-    if (live) {
+    await _device.stop();
+  }
+
+  Future<void> _scan() async {
+    if (!mounted) return;
+    if (_scanOpen) return;
+    if (_live) {
+      final allowed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Find restaurants around you'),
+          content: const Text(
+            'Allow foreground location and camera access to find restaurants '
+            'within 1 km and show their directions. Camera frames stay on your device.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Later'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Continue'),
+            ),
+          ],
+        ),
+      );
+      if (allowed != true || !mounted) return;
+    }
+    if (!mounted) return;
+    setState(() {
+      _scanOpen = true;
+      _scanView = 0;
+      _error = null;
+    });
+    if (_live) {
       await _device.start();
-      if (mounted && _live && !_loading) await _reload();
+      if (mounted &&
+          _scanOpen &&
+          _live &&
+          !_loading &&
+          _lastQueryCenter == null) {
+        await _reload();
+      }
     } else {
-      await _device.stop();
-      if (mounted && !_live) await _reload();
+      await _reload();
     }
   }
 
+  Future<void> _closeScan() async {
+    if (!mounted) return;
+    _loadGeneration++;
+    _routeGeneration++;
+    setState(() {
+      _scanOpen = false;
+      _scanView = 0;
+      _tab = 0;
+      _route = null;
+      _destination = null;
+      _demoProgress = 0;
+      _routing = false;
+      _loading = false;
+      _restaurants = [];
+      _lastQueryCenter = null;
+      _lastQueryTime = null;
+      _search.clear();
+      _cuisine = 'All';
+      _error = null;
+    });
+    await _device.stop();
+  }
+
   Future<void> _navigate(Restaurant restaurant) async {
+    if (!mounted) return;
     if (_position == null) return;
     final generation = ++_routeGeneration;
     final live = _live;
@@ -287,9 +375,7 @@ class _HomeState extends State<_Home> {
         });
         return;
       }
-      final service = live
-          ? SupabaseRouteService(widget.client!)
-          : widget.demoRouteService;
+      final service = live ? _walkingRoutes : widget.demoRouteService;
       final route = await service
           .route(start, restaurant.location)
           .timeout(const Duration(seconds: 30));
@@ -299,33 +385,29 @@ class _HomeState extends State<_Home> {
         _destination = restaurant;
         _demoProgress = 0;
         _routing = false;
-        _tab = 2;
+        _scanOpen = true;
+        _scanView = 2;
         if (!_live) {
           _demoHeading = bearingDegrees(route.points.first, route.points[1]);
         }
+      });
+    } on WalkingRouteException catch (error) {
+      if (!mounted || generation != _routeGeneration) return;
+      setState(() {
+        _routing = false;
+        _error = error.message;
       });
     } on Object {
       if (!mounted || generation != _routeGeneration) return;
       setState(() {
         _routing = false;
         _error =
-            'Walking directions are unavailable. Please try again. '
-            'Live routes need an enabled routing connection.';
+            'Walking directions are unavailable. Check your connection and try again.';
       });
     }
   }
 
-  void _finishRoute() {
-    _routeGeneration++;
-    setState(() {
-      _route = null;
-      _destination = null;
-      _demoProgress = 0;
-      _tab = 0;
-      _routing = false;
-    });
-    unawaited(_reload());
-  }
+  void _finishRoute() => unawaited(_closeScan());
 
   List<Restaurant> get _filtered {
     final query = _search.text.trim().toLowerCase();
@@ -351,107 +433,254 @@ class _HomeState extends State<_Home> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    body: SafeArea(
-      bottom: false,
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1440),
-          child: Column(
-            children: [
-              _header(),
-              if (_routing)
-                const LinearProgressIndicator(
-                  semanticsLabel: 'Finding walking directions',
-                ),
-              if (_error != null)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
-                  child: _Notice(
-                    text: _error!,
-                    icon: Icons.wifi_off_rounded,
-                    action: 'Dismiss',
-                    onAction: () => setState(() => _error = null),
+  Widget build(BuildContext context) => PopScope(
+    canPop: !_scanOpen && _tab == 0,
+    onPopInvokedWithResult: (didPop, result) {
+      if (didPop) return;
+      if (_scanOpen) {
+        unawaited(_closeScan());
+      } else if (_tab != 0) {
+        setState(() => _tab = 0);
+      }
+    },
+    child: Scaffold(
+      body: SafeArea(
+        bottom: false,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1440),
+            child: Column(
+              children: [
+                if (_scanOpen) _scanHeader(),
+                if (_routing || _loading)
+                  const LinearProgressIndicator(
+                    semanticsLabel: 'Finding restaurants or walking directions',
                   ),
+                if (_error != null)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
+                    child: _Notice(
+                      text: _error!,
+                      icon: Icons.info_outline,
+                      action: 'Dismiss',
+                      onAction: () => setState(() => _error = null),
+                    ),
+                  ),
+                Expanded(
+                  child: _scanOpen
+                      ? switch (_scanView) {
+                          1 => _explore(),
+                          2 => _journey(),
+                          _ => _cameraPage(),
+                        }
+                      : _tab == 0
+                      ? ScanHome(
+                          displayName: widget.account.displayName,
+                          onScan: () => unawaited(_scan()),
+                          busy: _device.busy || _loading,
+                          isDemo: !_live,
+                          position: _position,
+                          restaurants: _restaurants,
+                        )
+                      : ProfileScreen(
+                          displayName: widget.account.displayName,
+                          email: widget.account.email,
+                          isGuest: widget.account.isGuest,
+                          onSettings: _showSettings,
+                          onHelp: _showHelp,
+                          onLogout: widget.account.onLogout,
+                        ),
                 ),
-              Expanded(
-                child: switch (_tab) {
-                  0 => _explore(),
-                  1 => _cameraPage(),
-                  _ => _journey(),
+              ],
+            ),
+          ),
+        ),
+      ),
+      bottomNavigationBar: _scanOpen
+          ? null
+          : NavigationBar(
+              selectedIndex: _tab,
+              onDestinationSelected: (index) => setState(() => _tab = index),
+              destinations: const [
+                NavigationDestination(icon: Icon(Icons.home), label: 'Home'),
+                NavigationDestination(
+                  icon: Icon(Icons.person),
+                  label: 'Profile',
+                ),
+              ],
+            ),
+    ),
+  );
+
+  Widget _scanHeader() => Padding(
+    padding: const EdgeInsets.fromLTRB(6, 8, 12, 8),
+    child: Row(
+      children: [
+        IconButton(
+          tooltip: 'Back to Home',
+          onPressed: () => unawaited(_closeScan()),
+          icon: const Icon(Icons.arrow_back),
+        ),
+        Expanded(
+          child: Text(
+            _scanView == 2 ? 'Walking directions' : 'Restaurants within 1 km',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+          ),
+        ),
+        IconButton(
+          tooltip: 'Camera view',
+          onPressed: () => setState(() => _scanView = 0),
+          icon: Icon(Icons.view_in_ar, color: _scanView == 0 ? _ink : _muted),
+        ),
+        IconButton(
+          tooltip: 'Restaurant list',
+          onPressed: () => setState(() => _scanView = 1),
+          icon: Icon(Icons.list_alt, color: _scanView == 1 ? _ink : _muted),
+        ),
+        if (_route != null)
+          IconButton(
+            tooltip: 'Walking directions',
+            onPressed: () => setState(() => _scanView = 2),
+            icon: const Icon(Icons.route),
+          ),
+      ],
+    ),
+  );
+
+  void _showSettings() {
+    if (!mounted) return;
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      constraints: const BoxConstraints(maxWidth: 600),
+      builder: (sheetContext) => SafeArea(
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Padding(
+                padding: EdgeInsets.all(12),
+                child: Text(
+                  'Settings',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.radar),
+                title: const Text('Search radius'),
+                subtitle: const Text('1 km around your GPS location'),
+              ),
+              SwitchListTile(
+                title: const Text('Use demo mode'),
+                value: !_live,
+                subtitle: Text(
+                  _live
+                      ? 'Using live Supabase restaurant data'
+                      : 'Fictional places and simulated camera view',
+                ),
+                onChanged: (demo) {
+                  Navigator.pop(sheetContext);
+                  unawaited(_changeMode(!demo));
                 },
+              ),
+              if (widget.account.onRename != null)
+                ListTile(
+                  leading: const Icon(Icons.edit_outlined),
+                  title: const Text('Change guest name'),
+                  subtitle: Text(widget.account.displayName),
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+                    unawaited(_renameGuest());
+                  },
+                ),
+              ListTile(
+                leading: const Icon(Icons.security_outlined),
+                title: const Text('Device permissions'),
+                subtitle: const Text('Manage location and camera access'),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  unawaited(_device.openSettings());
+                },
+              ),
+              const Padding(
+                padding: EdgeInsets.all(20),
+                child: Text(
+                  'Walking routes: © OpenStreetMap contributors · ODbL. Routing service provided by FOSSGIS. '
+                  'No maps or routing API key is required.',
+                  style: TextStyle(color: _muted, fontSize: 11, height: 1.5),
+                ),
               ),
             ],
           ),
         ),
       ),
-    ),
-    bottomNavigationBar: NavigationBar(
-      selectedIndex: _tab,
-      onDestinationSelected: (index) => setState(() => _tab = index),
-      destinations: const [
-        NavigationDestination(
-          icon: Icon(Icons.explore_outlined),
-          selectedIcon: Icon(Icons.explore),
-          label: 'Discover',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.view_in_ar_outlined),
-          selectedIcon: Icon(Icons.view_in_ar),
-          label: 'Camera',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.route_outlined),
-          selectedIcon: Icon(Icons.route),
-          label: 'Journey',
-        ),
-      ],
-    ),
-  );
+    );
+  }
 
-  Widget _header() => Padding(
-    padding: const EdgeInsets.fromLTRB(22, 18, 22, 16),
-    child: Row(
-      children: [
-        Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            color: _ink,
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: const Icon(Icons.ramen_dining_rounded, color: _gold, size: 25),
+  Future<void> _renameGuest() async {
+    if (!mounted) return;
+    var editedName = widget.account.displayName;
+    final name = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Your guest name'),
+        content: TextFormField(
+          initialValue: editedName,
+          maxLength: 32,
+          autofocus: true,
+          onChanged: (value) => editedName = value,
+          decoration: const InputDecoration(labelText: 'Name'),
         ),
-        const SizedBox(width: 10),
-        const Expanded(
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (editedName.trim().isNotEmpty) {
+                Navigator.pop(dialogContext, editedName.trim());
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    if (name != null && mounted) widget.account.onRename?.call(name);
+  }
+
+  void _showHelp() {
+    if (!mounted) return;
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('How DineFinder works'),
+        content: const SingleChildScrollView(
           child: Text(
-            'DineFinder',
-            style: TextStyle(
-              fontSize: 21,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -.8,
-            ),
+            '1. Tap Scan for Restaurant and allow foreground location and camera access.\n\n'
+            '2. DineFinder finds restaurants within 1 km using your GPS coordinates and Supabase data. '
+            'Turn your phone to see nearby markers, or open the restaurant list.\n\n'
+            '3. Tap a marker for its profile, then Navigate for walking directions and a camera arrow.\n\n'
+            'The camera does not recognize restaurant signs or objects. Markers use approximate GPS and compass bearings; '
+            'they are not world-anchored AR. Watch your surroundings.\n\n'
+            'Live mode sends coordinates to Supabase for discovery and to the FOSSGIS OpenStreetMap routing service '
+            'when you request walking directions. Camera images remain on the device.\n\n'
+            'Demo mode works offline with clearly labeled fictional places and simulated routes. '
+            'Guest names last for this session. Real account sign-in uses Supabase.',
           ),
         ),
-        SegmentedButton<bool>(
-          showSelectedIcon: false,
-          style: SegmentedButton.styleFrom(
-            visualDensity: VisualDensity.compact,
-            textStyle: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-            ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Got it'),
           ),
-          segments: const [
-            ButtonSegment(value: false, label: Text('Demo')),
-            ButtonSegment(value: true, label: Text('Live')),
-          ],
-          selected: {_live},
-          onSelectionChanged: (value) => unawaited(_changeMode(value.first)),
-        ),
-      ],
-    ),
-  );
+        ],
+      ),
+    );
+  }
 
   Widget _explore() {
     final position = _position;
@@ -467,7 +696,7 @@ class _HomeState extends State<_Home> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'A little curiosity.\nA great next bite.',
+              'Nearby restaurants',
               style: TextStyle(
                 fontSize: 34,
                 height: 1.10,
@@ -543,21 +772,7 @@ class _HomeState extends State<_Home> {
                     ),
                   ),
                 ),
-                DropdownButton<double>(
-                  value: _radius,
-                  underline: const SizedBox(),
-                  borderRadius: BorderRadius.circular(14),
-                  items: const [
-                    DropdownMenuItem(value: 500, child: Text('500 m')),
-                    DropdownMenuItem(value: 1000, child: Text('1 km')),
-                    DropdownMenuItem(value: 2000, child: Text('2 km')),
-                  ],
-                  onChanged: (radius) {
-                    if (radius == null) return;
-                    setState(() => _radius = radius);
-                    unawaited(_reload());
-                  },
-                ),
+                const Text('1 km', style: TextStyle(color: _muted)),
                 IconButton(
                   tooltip: 'Refresh restaurants',
                   onPressed: _loading ? null : _reload,
@@ -651,7 +866,7 @@ class _HomeState extends State<_Home> {
         ),
         const SizedBox(height: 8),
         const Text(
-          'Try a larger radius or a different search.',
+          'Try a different search or refresh your location.',
           style: TextStyle(color: _muted),
         ),
         TextButton(
@@ -659,7 +874,6 @@ class _HomeState extends State<_Home> {
             setState(() {
               _search.clear();
               _cuisine = 'All';
-              _radius = 2000;
             });
             unawaited(_reload());
           },
@@ -879,7 +1093,7 @@ class _HomeState extends State<_Home> {
               ),
               const SizedBox(height: 22),
               FilledButton(
-                onPressed: () => setState(() => _tab = 0),
+                onPressed: () => setState(() => _scanView = 1),
                 child: const Text('Discover restaurants'),
               ),
             ],
@@ -1061,6 +1275,7 @@ class _HomeState extends State<_Home> {
   }
 
   Future<void> _showRestaurant(Restaurant place) async {
+    if (!mounted) return;
     if (_routing) return;
     final point = _position;
     if (point == null) return;

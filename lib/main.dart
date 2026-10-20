@@ -6,7 +6,10 @@ import 'app/dinefinder_app.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   const url = String.fromEnvironment('SUPABASE_URL');
-  const key = String.fromEnvironment('SUPABASE_ANON_KEY');
+  const key = String.fromEnvironment(
+    'SUPABASE_PUBLISHABLE_KEY',
+    defaultValue: String.fromEnvironment('SUPABASE_ANON_KEY'),
+  );
   SupabaseClient? client;
   if (url.isNotEmpty && key.isNotEmpty) {
     try {

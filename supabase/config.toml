@@ -1,9 +1,1 @@
 project_id = "dinefinder"
-
-[auth]
-enable_anonymous_sign_ins = true
-
-[functions.walking-route]
-# The handler verifies the bearer token with auth.getUser(). This supports
-# current publishable keys, while still requiring an authenticated user.
-verify_jwt = false

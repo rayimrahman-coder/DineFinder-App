@@ -75,34 +75,6 @@ abstract class RouteService {
   Future<RoutePlan> route(GeoPoint from, GeoPoint to);
 }
 
-class SupabaseRouteService implements RouteService {
-  const SupabaseRouteService(this.client);
-  final SupabaseClient client;
-
-  @override
-  Future<RoutePlan> route(GeoPoint from, GeoPoint to) async {
-    if (!from.isValid || !to.isValid) {
-      throw ArgumentError('Walking directions require valid coordinates.');
-    }
-    // The routing key stays in the Edge Function. Anonymous users receive a
-    // real authenticated session, which the function verifies server-side.
-    if (client.auth.currentSession == null) {
-      await client.auth.signInAnonymously();
-    }
-    final response = await client.functions.invoke(
-      'walking-route',
-      body: {'from': from.toJson(), 'to': to.toJson()},
-    );
-    final data = response.data;
-    if (response.status < 200 || response.status >= 300 || data is! Map) {
-      throw StateError(
-        'Walking directions are unavailable. Try again shortly.',
-      );
-    }
-    return RoutePlan.fromJson(Map<String, dynamic>.from(data));
-  }
-}
-
 class DemoRouteService implements RouteService {
   const DemoRouteService();
 
