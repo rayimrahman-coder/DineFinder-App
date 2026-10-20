@@ -1,0 +1,6 @@
+# Optional local overrides. The app already includes its public project configuration.
+# Copy to ignored supabase.properties only when connecting a different project.
+# Blank values are ignored. Use Profile > Settings > Use demo mode for offline testing.
+# Never use a service-role key or database password.
+SUPABASE_URL=
+SUPABASE_PUBLISHABLE_KEY=
