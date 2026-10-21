@@ -27,14 +27,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.MailOutline
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Settings
@@ -48,7 +45,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -67,8 +63,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -79,6 +73,7 @@ import com.example.dinefinder.settings.ApiKeyStore
 import com.example.dinefinder.settings.HelpScreen
 import com.example.dinefinder.settings.UserPreferences
 import com.example.dinefinder.ui.theme.DineFinderTheme
+import com.example.dinefinder.ui.WelcomeScreen
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 
@@ -101,7 +96,12 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         setContent {
-            var email by remember { mutableStateOf(preferences.currentEmail()) }
+            val appViewModel: AppViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+            // A remembered email is a display preference, never proof of authentication.
+            var email by remember {
+                mutableStateOf(appViewModel.state.account?.email
+                    ?: preferences.currentEmail().takeIf { it == "guest@dinefinder.local" }.orEmpty())
+            }
             var name by remember { mutableStateOf(preferences.userName(email)) }
             var darkMode by remember { mutableStateOf(preferences.isDarkMode()) }
             var apiKey by remember { mutableStateOf(apiKeyStore.apiKey()) }
@@ -116,11 +116,15 @@ class MainActivity : ComponentActivity() {
                         if (email.isBlank()) AppScreen.SIGN_IN else AppScreen.HOME
                     )
                 }
+                LaunchedEffect(email) {
+                    if (email.isBlank()) screen = AppScreen.SIGN_IN
+                }
                 var helpReturnScreen by rememberSaveable { mutableStateOf(AppScreen.PROFILE) }
                 DisposableEffect(lifecycle) {
                     val observer = LifecycleEventObserver { _, event ->
                         if (event == Lifecycle.Event.ON_RESUME) {
-                            val savedEmail = preferences.currentEmail()
+                            val savedEmail = appViewModel.state.account?.email
+                                ?: preferences.currentEmail().takeIf { it == "guest@dinefinder.local" }.orEmpty()
                             if (email != savedEmail) {
                                 screen = if (savedEmail.isBlank()) AppScreen.SIGN_IN else AppScreen.HOME
                             }
@@ -147,8 +151,6 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                val appViewModel: AppViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
-                
                 LaunchedEffect(appViewModel.state.account) {
                     if (appViewModel.state.account != null) {
                         val authEmail = appViewModel.state.account!!.email
@@ -160,22 +162,14 @@ class MainActivity : ComponentActivity() {
                 }
 
                 when (screen) {
-                    AppScreen.SIGN_IN -> SignInScreen(
-                        onSignIn = { enteredEmail, password ->
-                            when {
-                                !android.util.Patterns.EMAIL_ADDRESS.matcher(enteredEmail).matches() ->
-                                    "Enter a valid email address."
-                                password.length < 6 ->
-                                    "Password must contain at least 6 characters."
-                                else -> {
-                                    email = enteredEmail.trim()
-                                    appViewModel.authenticate(email, password, create = false)
-                                    // Error messages are handled via view model state, but for UI feedback we can return message
-                                    appViewModel.state.message
-                                }
-                            }
+                    AppScreen.SIGN_IN -> WelcomeScreen(
+                        busy = appViewModel.state.authBusy,
+                        message = appViewModel.state.message,
+                        onAuthenticate = { enteredEmail, password, create ->
+                            appViewModel.authenticate(enteredEmail, password, create)
                         },
                         onGuest = {
+                            appViewModel.enterGuest()
                             email = "guest@dinefinder.local"
                             preferences.signIn(email)
                             name = preferences.userName(email)
@@ -209,6 +203,7 @@ class MainActivity : ComponentActivity() {
                                 screen = AppScreen.HELP
                             },
                             onLogout = {
+                                appViewModel.logout()
                                 preferences.signOut()
                                 email = ""
                                 name = preferences.userName(email)
@@ -284,151 +279,6 @@ class MainActivity : ComponentActivity() {
         super.onSaveInstanceState(outState)
     }
 }
-
-@Composable
-private fun SignInScreen(
-    onSignIn: (String, String) -> String?,
-    onGuest: () -> Unit
-) {
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surface)
-            .padding(horizontal = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Spacer(Modifier.weight(1f))
-        Box(
-            modifier = Modifier
-                .size(56.dp)
-                .clip(RoundedCornerShape(17.dp))
-                .background(MaterialTheme.colorScheme.secondaryContainer),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.Restaurant,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(29.dp)
-            )
-        }
-        Spacer(Modifier.height(14.dp))
-        Text(
-            text = "DineFinder",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-        Spacer(Modifier.height(6.dp))
-        Text(
-            text = "Create an account or sign in to continue.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.62f)
-        )
-        Spacer(Modifier.height(30.dp))
-
-        OutlinedTextField(
-            value = email,
-            onValueChange = { email = it; errorMessage = null },
-            modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("Email address") },
-            leadingIcon = {
-                Icon(Icons.Default.MailOutline, contentDescription = null)
-            },
-            singleLine = true,
-            shape = RoundedCornerShape(14.dp),
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Email,
-                autoCorrectEnabled = false
-            ),
-            colors = signInFieldColors()
-        )
-        Spacer(Modifier.height(10.dp))
-        OutlinedTextField(
-            value = password,
-            onValueChange = { password = it; errorMessage = null },
-            modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("Password") },
-            leadingIcon = {
-                Icon(Icons.Default.Lock, contentDescription = null)
-            },
-            singleLine = true,
-            shape = RoundedCornerShape(14.dp),
-            visualTransformation = PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            colors = signInFieldColors()
-        )
-        if (errorMessage != null) {
-            Text(
-                text = errorMessage.orEmpty(),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.error
-            )
-        }
-        Spacer(Modifier.height(14.dp))
-        Button(
-            onClick = { errorMessage = onSignIn(email.trim(), password) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp),
-            shape = RoundedCornerShape(13.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
-            )
-        ) {
-            Text("Continue", fontWeight = FontWeight.SemiBold)
-        }
-        Spacer(Modifier.height(15.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(Modifier.weight(1f).height(1.dp).background(MaterialTheme.colorScheme.outlineVariant))
-            Text(
-                "  OR  ",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-            )
-            Box(Modifier.weight(1f).height(1.dp).background(MaterialTheme.colorScheme.outlineVariant))
-        }
-        Spacer(Modifier.height(14.dp))
-        OutlinedButton(
-            onClick = onGuest,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp),
-            shape = RoundedCornerShape(13.dp)
-        ) {
-            Text("Continue as guest", fontWeight = FontWeight.Medium)
-        }
-        Spacer(Modifier.weight(1f))
-        Text(
-            text = "By continuing, you agree to DineFinder's\nTerms of Service and Privacy Policy.",
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 22.dp),
-            textAlign = TextAlign.Center,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.52f)
-        )
-    }
-}
-
-@Composable
-private fun signInFieldColors() = OutlinedTextFieldDefaults.colors(
-    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-    focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-    focusedBorderColor = MaterialTheme.colorScheme.primary
-)
 
 @Composable
 private fun MainScaffold(

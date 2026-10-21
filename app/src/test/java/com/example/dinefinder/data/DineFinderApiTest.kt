@@ -171,6 +171,13 @@ class DineFinderApiTest {
         assertEquals("The email or password is incorrect.", error.message)
     }
 
+    @Test fun unconfirmedEmailExplainsNextStepWithoutSigningIn() = runBlocking {
+        server.enqueue(json("""{"error_code":"email_not_confirmed"}""", 400))
+        val error = expectApiError { api.signIn("person@example.test", "test-password") }
+        assertEquals("Confirm your email address before signing in.", error.message)
+        assertEquals(1, server.requestCount)
+    }
+
     @Test fun logoutIsScopedToCurrentSessionRatherThanGlobalSessions() = runBlocking {
         server.enqueue(MockResponse().setResponseCode(204))
         api.signOut(Account("Person", "person@example.test", "user-session-token"))
