@@ -6,6 +6,7 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
+    alias(libs.plugins.google.ksp)
 }
 
 val supabaseProperties = Properties().apply {
@@ -115,4 +116,13 @@ dependencies {
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
+
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
+    implementation(libs.retrofit.core)
+    implementation(libs.retrofit.converter.gson)
+    implementation(libs.google.material)
+    implementation(libs.google.maps.utils)
+    implementation(libs.play.services.location)
 }

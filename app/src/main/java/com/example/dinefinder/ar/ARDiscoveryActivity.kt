@@ -250,8 +250,8 @@ class ARDiscoveryActivity : AppCompatActivity(), SensorEventListener {
     }
 
     private fun rebuildNearbyRestaurants() {
-        // Google content is only an in-memory view overlay; this never writes to Room.
-        nearbyRestaurants = merger.mergeNearbyRestaurants(localRestaurants, googlePlaces)
+        // Just use local restaurants since we are not using Google Places API
+        nearbyRestaurants = merger.mergeNearbyRestaurants(localRestaurants, emptyList())
         restaurants = nearbyRestaurants.map { it.restaurant }
     }
 
@@ -337,57 +337,7 @@ class ARDiscoveryActivity : AppCompatActivity(), SensorEventListener {
     }
 
     private fun maybeSearchPlaces() {
-        if (!scanActive || !lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED) ||
-            configuredKey.isBlank() || placesJob?.isCompleted == false || cameraError ||
-            projection == null || !captureFreshness.isFresh(SystemClock.elapsedRealtimeNanos())) return
-        val location = currentLocation(SystemClock.elapsedRealtimeNanos()) ?: return
-        val ticket = placesGate.tryStart(location, SystemClock.elapsedRealtime()) ?: return
-        val generation = placesGeneration
-        val requestKey = configuredKey
-        placesFailure = null
-        refreshScan(force = true)
-        placesJob = lifecycleScope.launch {
-            try {
-                val result = placesClient.searchNearby(
-                    requestKey, GoogleMapsAppIdentity.from(this@ARDiscoveryActivity),
-                    location, RestaurantCameraScan.RADIUS_METERS
-                )
-                if (generation != placesGeneration || !scanActive || requestKey != configuredKey) return@launch
-                when (result) {
-                    is PlacesSearchResult.Success -> {
-                        if (placesGate.succeeded(ticket, location, SystemClock.elapsedRealtime())) {
-                            googlePlaces = result.places
-                            placesFailure = null
-                        }
-                    }
-                    is PlacesSearchResult.Failure -> {
-                        if (result.reason == PlacesFailure.NO_RESULTS) {
-                            if (placesGate.succeeded(ticket, location, SystemClock.elapsedRealtime())) {
-                                googlePlaces = emptyList()
-                                placesFailure = null
-                            }
-                        } else if (placesGate.failed(ticket, SystemClock.elapsedRealtime(),
-                                retryDelayMillis = if (result.reason == PlacesFailure.QUOTA) 60_000L else 30_000L,
-                                blockConfiguration = result.reason.needsSettings)) {
-                            placesFailure = result.reason
-                            if (result.reason.needsSettings) googlePlaces = emptyList()
-                        }
-                    }
-                }
-                rebuildNearbyRestaurants()
-                refreshScan(force = true)
-            } catch (error: CancellationException) {
-                throw error
-            } catch (_: Exception) {
-                if (generation == placesGeneration && scanActive && requestKey == configuredKey &&
-                    placesGate.failed(ticket, SystemClock.elapsedRealtime())) {
-                    placesFailure = PlacesFailure.NETWORK
-                    refreshScan(force = true)
-                }
-            } finally {
-                if (generation == placesGeneration) placesJob = null
-            }
-        }
+        // Disabled: No longer using Google Places API.
     }
 
     private fun startScanServices() {

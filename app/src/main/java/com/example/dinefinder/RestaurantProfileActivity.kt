@@ -197,43 +197,11 @@ class RestaurantProfileActivity : AppCompatActivity() {
             }
         }
     }
-
     private fun loadOnlineRating(key: String) {
+        // Disabled: No longer using Google Places API.
         val selected = selection ?: return
-        cancelOnlineRequests()
-        activeKey = key
-        val local = mergeProfileContent(selected.restaurant, null)
-        renderContent(local)
-        val status = text(R.id.profileOnlineStatus)
-        val placeId = selected.placeId
-        if (placeId == null || local.rating != null && local.cuisine.isNotBlank()) {
-            status.visibility = View.GONE
-            return
-        }
-        status.visibility = View.VISIBLE
-        if (key.isBlank()) {
-            status.setText(R.string.restaurant_profile_online_key)
-            return
-        }
-        val identity = GoogleMapsAppIdentity.from(this)
-        if (identity == null) {
-            status.setText(R.string.restaurant_profile_online_config)
-            return
-        }
-        val generation = requestGeneration
-        status.setText(R.string.restaurant_profile_online_loading)
-        detailsJob = lifecycleScope.launch {
-            when (val result = placesClient.ratingDetails(key, identity, placeId)) {
-                is PlaceDetailsResult.Failure -> {
-                    if (isCurrent(generation, key)) status.setText(failureMessage(result.reason))
-                }
-                is PlaceDetailsResult.Success -> {
-                    if (!isCurrent(generation, key)) return@launch
-                    renderContent(mergeProfileContent(selected.restaurant, result.details))
-                    status.visibility = View.GONE
-                }
-            }
-        }
+        renderContent(mergeProfileContent(selected.restaurant, null))
+        text(R.id.profileOnlineStatus).visibility = View.GONE
     }
 
     private fun isCurrent(generation: Int, key: String) = active &&

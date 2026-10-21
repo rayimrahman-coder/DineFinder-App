@@ -14,6 +14,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import com.example.dinefinder.core.*
+import com.example.dinefinder.core.Restaurant as CoreRestaurant
 import com.example.dinefinder.data.*
 import com.example.dinefinder.device.DeviceSensors
 import com.example.dinefinder.device.SensorSnapshot
@@ -33,9 +34,9 @@ internal data class AppState(
     val message: String? = null,
     val error: String? = null,
     val sensors: SensorSnapshot = SensorSnapshot(),
-    val restaurants: List<Restaurant> = emptyList(),
-    val selected: Restaurant? = null,
-    val destination: Restaurant? = null,
+    val restaurants: List<CoreRestaurant> = emptyList(),
+    val selected: CoreRestaurant? = null,
+    val destination: CoreRestaurant? = null,
     val route: RoutePlan? = null,
     val demoHeading: Double = 35.0,
     val demoProgress: Double = 0.0,
@@ -202,8 +203,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    internal fun select(restaurant: Restaurant?) { state = state.copy(selected = restaurant) }
-    internal fun navigate(restaurant: Restaurant) {
+    internal fun select(restaurant: CoreRestaurant?) { state = state.copy(selected = restaurant) }
+    internal fun navigate(restaurant: CoreRestaurant) {
         if (state.routing) return
         val origin = state.position ?: return
         if (!state.demo && !freshFix()) {

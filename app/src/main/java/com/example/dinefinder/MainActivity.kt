@@ -147,6 +147,18 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
+                val appViewModel: AppViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+                
+                LaunchedEffect(appViewModel.state.account) {
+                    if (appViewModel.state.account != null) {
+                        val authEmail = appViewModel.state.account!!.email
+                        preferences.signIn(authEmail)
+                        email = authEmail
+                        name = preferences.userName(authEmail)
+                        screen = AppScreen.HOME
+                    }
+                }
+
                 when (screen) {
                     AppScreen.SIGN_IN -> SignInScreen(
                         onSignIn = { enteredEmail, password ->
@@ -157,10 +169,9 @@ class MainActivity : ComponentActivity() {
                                     "Password must contain at least 6 characters."
                                 else -> {
                                     email = enteredEmail.trim()
-                                    preferences.signIn(email)
-                                    name = preferences.userName(email)
-                                    screen = AppScreen.HOME
-                                    null
+                                    appViewModel.authenticate(email, password, create = false)
+                                    // Error messages are handled via view model state, but for UI feedback we can return message
+                                    appViewModel.state.message
                                 }
                             }
                         },
