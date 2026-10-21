@@ -29,3 +29,7 @@ key.properties
 .pub-cache/
 .pub/
 coverage/
+
+# Python import-tool caches
+__pycache__/
+*.pyc
