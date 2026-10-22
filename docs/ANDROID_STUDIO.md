@@ -166,9 +166,14 @@ crossings.
 
 ## Diagnose an empty restaurant search
 
-On the scan screen, tap the **information icon → Copy details**. This reports
-phone coordinates, location accuracy/precise permission, the actual search
-centre, radius, last completed result count, and a safe error message. It never
+On the scan screen, tap **Checks → Copy checks**. The checklist automatically
+updates permissions, location-service availability, GPS freshness/accuracy,
+internet validation, Supabase configuration, the database request, nearby
+matches, compass and camera-preview streaming. PASS means an observed success;
+WAIT means not yet confirmed, FAIL identifies a failed requirement/request, and
+CHECK means something needs attention (including zero restaurant results).
+The copied report includes phone coordinates, location accuracy/precise
+permission, the actual search centre, radius, result count and a safe error message. It never
 copies the app key or account tokens. Share these details when reporting an
 empty search; enabling precise location is especially relevant when reported
 accuracy is hundreds of metres or more.

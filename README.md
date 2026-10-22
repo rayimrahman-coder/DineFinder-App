@@ -84,6 +84,20 @@ override the bundled configuration; blank values are ignored. Restaurant discove
 uses live Supabase records only; it does not automatically fall back to local seed
 records or fictional restaurants.
 
+## Scan checklist
+
+In Scan mode, tap **Checks** for 12 automatic checks covering permissions,
+location services, GPS freshness/accuracy, internet, Supabase configuration and
+search, nearby results, compass and camera preview. PASS, WAIT, FAIL and CHECK
+statuses explain what was actually observed. A successful search with zero
+matches is distinguished from a failed request. Camera permission alone does
+not count as working video: CameraX must report live preview streaming.
+
+Tap **Copy checks** to share the checklist, search coordinates and accuracy for
+troubleshooting. No API keys or account tokens are included. The checklist
+cannot by itself distinguish missing rows from an RLS policy returning no rows;
+use `supabase/diagnose_nearby.sql` to compare database and public-role searches.
+
 ## Build and validation
 
 ```sh
@@ -93,7 +107,7 @@ records or fictional restaurants.
 On Windows, use `gradlew.bat`. The APK is generated at
 `app/build/outputs/apk/debug/app-debug.apk`.
 
-Version 0.4.1 passes the debug APK build, Android lint, and 23 targeted Supabase,
+Version 0.4.2 passes the debug APK build, Android lint, and 31 targeted Supabase,
 authentication, and screen regression tests. Physical-phone GPS/camera/AR and
 live Supabase availability still require testing.
 

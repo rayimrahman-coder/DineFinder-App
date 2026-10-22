@@ -2,6 +2,10 @@ package com.example.dinefinder
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.location.LocationManager
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.os.SystemClock
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -9,6 +13,11 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.HourglassEmpty
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -16,6 +25,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
+import com.example.dinefinder.data.SupabaseConfig
+import kotlinx.coroutines.delay
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -32,6 +43,16 @@ internal fun SupabaseDiscoveryFlow(model: AppViewModel) {
     val context = LocalContext.current
     val owner = LocalLifecycleOwner.current
     var showSearchDetails by remember { mutableStateOf(false) }
+    var cameraReady by remember { mutableStateOf(false) }
+    var cameraError by remember { mutableStateOf<String?>(null) }
+    var cameraActive by remember { mutableStateOf(true) }
+    var checkTime by remember { mutableStateOf(SystemClock.elapsedRealtime()) }
+    LaunchedEffect(showSearchDetails, state.scan) {
+        while (showSearchDetails && state.scan) {
+            checkTime = SystemClock.elapsedRealtime()
+            delay(1000)
+        }
+    }
     val clipboard = LocalClipboardManager.current
     val permissions = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
         fun has(permission: String) = ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
@@ -70,17 +91,63 @@ internal fun SupabaseDiscoveryFlow(model: AppViewModel) {
             demoProgress = state.demoProgress,
             onShowSearchDetails = { showSearchDetails = true },
             searchCompleted = state.lastSearchCount != null,
+            onCameraCheckChange = { ready, error, active ->
+                cameraReady = ready; cameraError = error; cameraActive = active
+            },
         )
     }
     if (state.scan && showSearchDetails) {
-        val precise = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
-        val details = searchDetailsText(state, precise)
+        fun allowed(permission: String) = ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
+        val precise = allowed(Manifest.permission.ACCESS_FINE_LOCATION)
+        val locate = precise || allowed(Manifest.permission.ACCESS_COARSE_LOCATION)
+        val locationEnabled = runCatching { context.getSystemService(LocationManager::class.java)?.isLocationEnabled }.getOrNull()
+        val networkValidated = runCatching {
+            val manager = context.getSystemService(ConnectivityManager::class.java)
+            manager?.getNetworkCapabilities(manager.activeNetwork)?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+        }.getOrNull()
+        val checks = scanChecklist(state, locate, precise, locationEnabled, networkValidated,
+            SupabaseConfig(BuildConfig.SUPABASE_URL, BuildConfig.SUPABASE_PUBLISHABLE_KEY).isConfigured,
+            cameraReady, cameraError, cameraActive, checkTime)
+        val details = checks.joinToString("\n") { "${it.status}: ${it.title} — ${it.detail}" } + "\n\n" + searchDetailsText(state, precise)
         AlertDialog(
             onDismissRequest = { showSearchDetails = false },
-            title = { Text("Search details") },
-            text = { Column(Modifier.verticalScroll(rememberScrollState())) { Text(details) } },
-            confirmButton = { TextButton(onClick = { clipboard.setText(AnnotatedString(details)) }) { Text("Copy details") } },
-            dismissButton = { TextButton(onClick = { showSearchDetails = false }) { Text("Close") } },
+            title = { Text("Scan checklist") },
+            text = {
+                Column(Modifier.heightIn(max = 440.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                    val failures = checks.count { it.status == CheckStatus.FAIL }
+                    val attention = checks.count { it.status == CheckStatus.CHECK }
+                    Text("$failures failed · $attention need attention. Checks update automatically.")
+                    checks.forEach { check ->
+                        val color = when (check.status) {
+                            CheckStatus.PASS -> MaterialTheme.colorScheme.primary
+                            CheckStatus.FAIL -> MaterialTheme.colorScheme.error
+                            CheckStatus.CHECK -> MaterialTheme.colorScheme.tertiary
+                            CheckStatus.WAIT -> MaterialTheme.colorScheme.onSurfaceVariant
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Icon(when (check.status) {
+                                CheckStatus.PASS -> Icons.Default.CheckCircle
+                                CheckStatus.FAIL -> Icons.Default.Error
+                                CheckStatus.CHECK -> Icons.Default.Warning
+                                CheckStatus.WAIT -> Icons.Default.HourglassEmpty
+                            }, contentDescription = check.status.name, tint = color)
+                            Column(Modifier.weight(1f)) {
+                                Text(check.title, style = MaterialTheme.typography.titleSmall)
+                                Text("${check.status}: ${check.detail}", color = color, style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                    }
+                    HorizontalDivider()
+                    Text(searchDetailsText(state, precise), style = MaterialTheme.typography.bodySmall)
+                }
+            },
+            confirmButton = { TextButton(onClick = { clipboard.setText(AnnotatedString(details)) }) { Text("Copy checks") } },
+            dismissButton = {
+                Row {
+                    TextButton(onClick = { showSearchDetails = false; model.retry() }) { Text("Retry") }
+                    TextButton(onClick = { showSearchDetails = false }) { Text("Close") }
+                }
+            },
         )
     }
     if (state.consent) AlertDialog(

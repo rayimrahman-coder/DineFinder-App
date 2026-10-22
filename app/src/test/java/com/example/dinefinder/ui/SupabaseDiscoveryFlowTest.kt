@@ -49,6 +49,18 @@ class SupabaseDiscoveryFlowTest {
         assertNull(shadowOf(compose.activity).nextStartedActivity)
     }
 
+    @Test fun scanChecksOpensLiveChecklistAndCopyAction() {
+        compose.onNodeWithText("Continue as guest").performScrollTo().performClick()
+        compose.runOnIdle {
+            ViewModelProvider(compose.activity)[AppViewModel::class.java]
+                .scanWithPermissions(location = false, camera = false)
+        }
+        compose.onNodeWithText("Checks").assertIsDisplayed().performClick()
+        compose.onNodeWithText("Scan checklist").assertIsDisplayed()
+        compose.onNodeWithText("Location permission").assertIsDisplayed()
+        compose.onNodeWithText("Copy checks").assertIsDisplayed()
+    }
+
     @Test fun settingsDoesNotRequestGooglePlacesKey() {
         compose.onNodeWithText("Continue as guest").performScrollTo().performClick()
         compose.onNodeWithText("Profile").performClick()

@@ -57,13 +57,19 @@ fun ScanScreen(
     demoProgress: Double,
     onShowSearchDetails: () -> Unit = {},
     searchCompleted: Boolean = true,
+    onCameraCheckChange: (Boolean, String?, Boolean) -> Unit = { _, _, _ -> },
 ) {
     var listVisible by rememberSaveable { mutableStateOf(false) }
     var directionsVisible by remember(route) { mutableStateOf(false) }
+    var cameraReady by remember(isDemo) { mutableStateOf(false) }
     var cameraError by remember(isDemo) { mutableStateOf<String?>(null) }
     var arStatus by remember(route) { mutableStateOf<String?>(null) }
     var arEnabled by remember(route) { mutableStateOf(!isDemo && route != null) }
     var cameraAttempt by remember { mutableIntStateOf(0) }
+    val cameraActive = !listVisible && !(arEnabled && route != null)
+    LaunchedEffect(cameraReady, cameraError, cameraActive) {
+        onCameraCheckChange(cameraReady, cameraError, cameraActive)
+    }
     val validHeading = heading?.takeIf { it.isFinite() }
     val progress = if (position != null && route != null) restaurantRouteProgress(position, route, destination?.location) else null
     val pathEndsNearby = position != null && route != null && progress?.hasArrived == false && nearestRouteProgress(position, route).hasArrived
@@ -78,7 +84,7 @@ fun ScanScreen(
                 Text(if (route == null) "Discover restaurants" else "Walking navigation", style = MaterialTheme.typography.titleMedium)
                 Text(if (route == null) "Within 1 km · tap a dining marker" else destination?.name.orEmpty(), color = DineMuted, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
-            IconButton(onClick = onShowSearchDetails) { Icon(Icons.Default.Info, "Search details") }
+            TextButton(onClick = onShowSearchDetails) { Text("Checks") }
             TextButton(onClick = { listVisible = !listVisible }) { Text(if (listVisible) "Camera" else "List") }
         }
         if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
@@ -97,13 +103,13 @@ fun ScanScreen(
                 items(restaurants, key = { it.id }) { restaurant ->
                     ScanRestaurantCard(restaurant, position?.let { distanceMeters(it, restaurant.location) }, busy, onSelect)
                 }
-                item { TextButton(onClick = onShowSearchDetails) { Text("Search details") } }
+                item { TextButton(onClick = onShowSearchDetails) { Text("Scan checklist") } }
                 item { OutlinedButton(onClick = retry, enabled = !busy) { Text("Refresh location and search") } }
             }
         } else {
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 ScanCameraScene(position, validHeading, restaurants, route, progress, isDemo, busy,
-                    cameraAllowed, cameraAttempt, { cameraError = it }, onSelect,
+                    cameraAllowed, cameraAttempt, { cameraError = it }, { cameraReady = it }, onSelect,
                     arEnabled, pathEndsNearby, error, searchCompleted, { arStatus = it }, { arEnabled = false; arStatus = "Local 3D AR is unavailable. Using the camera compass view." },
                     Modifier.fillMaxSize())
                 Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -192,6 +198,7 @@ private fun ScanCameraScene(
     cameraAllowed: Boolean,
     cameraAttempt: Int,
     onCameraError: (String?) -> Unit,
+    onCameraReady: (Boolean) -> Unit,
     onSelect: (Restaurant) -> Unit,
     arEnabled: Boolean,
     pathEndsNearby: Boolean,
@@ -211,7 +218,7 @@ private fun ScanCameraScene(
                     headingDelta(bearingDegrees(position, progress.targetPoint), heading) else null,
                 Modifier.fillMaxSize(), onArStatus, onArUnavailable,
             )
-            cameraAllowed -> key(cameraAttempt) { CameraPreview(Modifier.fillMaxSize(), onCameraError) }
+            cameraAllowed -> key(cameraAttempt) { CameraPreview(Modifier.fillMaxSize(), onCameraError, onCameraReady) }
         }
         Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = .45f), Color.Transparent, Color.Black.copy(alpha = .75f)))))
         Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) {

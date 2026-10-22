@@ -25,10 +25,12 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 fun CameraPreview(
     modifier: Modifier = Modifier,
     onError: (String?) -> Unit,
+    onReadyChange: (Boolean) -> Unit = {},
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val errorCallback by rememberUpdatedState(onError)
+    val readyCallback by rememberUpdatedState(onReadyChange)
     val view = remember(context) {
         PreviewView(context).apply {
             scaleType = PreviewView.ScaleType.FILL_CENTER
@@ -40,6 +42,11 @@ fun CameraPreview(
 
     DisposableEffect(context, lifecycleOwner, view) {
         var disposed = false
+        readyCallback(false)
+        val streamObserver = Observer<PreviewView.StreamState> { stream ->
+            if (!disposed) readyCallback(stream == PreviewView.StreamState.STREAMING)
+        }
+        view.previewStreamState.observe(lifecycleOwner, streamObserver)
         var cameraProvider: ProcessCameraProvider? = null
         var ownedPreview: Preview? = null
         var cameraState: LiveData<CameraState>? = null
@@ -94,6 +101,8 @@ fun CameraPreview(
 
         onDispose {
             disposed = true
+            readyCallback(false)
+            view.previewStreamState.removeObserver(streamObserver)
             cameraState?.removeObserver(observer)
             ownedPreview?.let { preview ->
                 // Other camera use cases, if any, belong to their own owners.
