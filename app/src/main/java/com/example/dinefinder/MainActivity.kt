@@ -67,7 +67,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.dinefinder.ar.ARDiscoveryActivity
 import com.example.dinefinder.settings.SettingsScreen
 import com.example.dinefinder.settings.ApiKeyStore
 import com.example.dinefinder.settings.HelpScreen
@@ -143,7 +142,7 @@ class MainActivity : ComponentActivity() {
                         settingsRequested = false
                     }
                 }
-                BackHandler(enabled = screen in listOf(AppScreen.PROFILE, AppScreen.SETTINGS, AppScreen.HELP)) {
+                BackHandler(enabled = !appViewModel.state.scan && screen in listOf(AppScreen.PROFILE, AppScreen.SETTINGS, AppScreen.HELP)) {
                     when (screen) {
                         AppScreen.HELP -> screen = helpReturnScreen
                         AppScreen.SETTINGS -> if (returnToNavigation) finish() else screen = AppScreen.PROFILE
@@ -161,7 +160,7 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                when (screen) {
+                if (!appViewModel.state.scan) when (screen) {
                     AppScreen.SIGN_IN -> WelcomeScreen(
                         busy = appViewModel.state.authBusy,
                         message = appViewModel.state.message,
@@ -184,7 +183,10 @@ class MainActivity : ComponentActivity() {
                     ) { paddingValues ->
                         HomeScreen(
                             name = name,
-                            onScan = { startActivity(Intent(this, ARDiscoveryActivity::class.java)) },
+                            onScan = {
+                                if (appViewModel.state.account == null) appViewModel.enterGuest()
+                                appViewModel.requestScan()
+                            },
                             modifier = Modifier.padding(paddingValues)
                         )
                     }
@@ -229,6 +231,7 @@ class MainActivity : ComponentActivity() {
                             preferences.setDarkMode(enabled)
                             darkMode = enabled
                         },
+                        showApiKeySettings = false,
                         apiKey = apiKey,
                         onSaveApiKey = { enteredKey ->
                             val error = apiKeyStore.saveApiKey(enteredKey)
@@ -253,11 +256,14 @@ class MainActivity : ComponentActivity() {
                         backLabel = if (returnToNavigation) getString(R.string.settings_back_to_navigation) else null
                     )
 
-                    AppScreen.HELP -> HelpScreen(
-                        onBack = { screen = helpReturnScreen },
-                        onOpenSettings = { screen = AppScreen.SETTINGS }
-                    )
+                    AppScreen.HELP -> Column(Modifier.fillMaxSize().padding(24.dp)) {
+                        Button(onClick = { screen = helpReturnScreen }) { Text("Back") }
+                        Text("DineFinder help", style = MaterialTheme.typography.headlineMedium)
+                        Text("Scan uses your GPS to search the Supabase restaurant database within 1 km. Allow location and camera access. Tap a marker to view its saved profile, then choose Navigate.")
+                        Text("No Google Places key is needed. Missing restaurants must be added to Supabase by the project owner. If no results appear, check GPS, internet access, and database setup.")
+                    }
                 }
+                SupabaseDiscoveryFlow(appViewModel)
             }
         }
     }
@@ -379,7 +385,7 @@ private fun HomeScreen(
         RadarGraphic(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(290.dp)
+                .weight(3f)
         )
         Spacer(Modifier.weight(1f))
         Button(

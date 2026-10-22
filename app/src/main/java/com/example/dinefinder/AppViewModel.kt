@@ -24,7 +24,7 @@ internal data class AppState(
     val account: Account? = null,
     val guestName: String = "Guest",
     val profile: Boolean = false,
-    val demo: Boolean = true,
+    val demo: Boolean = false,
     val scan: Boolean = false,
     val consent: Boolean = false,
     val cameraAllowed: Boolean = false,
@@ -53,7 +53,7 @@ internal data class AppState(
 class AppViewModel(application: Application) : AndroidViewModel(application) {
     private val config = SupabaseConfig(BuildConfig.SUPABASE_URL, BuildConfig.SUPABASE_PUBLISHABLE_KEY)
     private val api = DineFinderApi(config)
-    internal var state by mutableStateOf(AppState(demo = !config.isConfigured))
+    internal var state by mutableStateOf(AppState(demo = false))
         private set
     private var foreground = false
     private var queryJob: Job? = null
@@ -94,7 +94,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         generation++
         queryJob?.cancel(); routeJob?.cancel(); authJob?.cancel()
         lastQuery = null
-        state = AppState(demo = !config.isConfigured)
+        state = AppState(demo = false)
         device.stop()
         if (account != null) viewModelScope.launch {
             // Clearing the local session must work even when the network is offline.
@@ -120,6 +120,10 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     internal fun requestScan() {
         if (!state.signedIn) return
+        if (!config.isConfigured) {
+            state = state.copy(error = "The Supabase connection is not configured. Restaurant data is available only from Supabase.")
+            return
+        }
         if (state.demo) {
             state = state.copy(scan = true, profile = false, error = null,
                 restaurants = DemoData.nearby(DemoData.origin))

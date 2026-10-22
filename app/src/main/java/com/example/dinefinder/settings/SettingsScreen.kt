@@ -58,6 +58,7 @@ internal fun SettingsScreen(
     onSaveApiKey: (String) -> String? = { null },
     onClearApiKey: () -> String? = { null },
     onApiKeyHelp: () -> Unit = {},
+    showApiKeySettings: Boolean = true,
     backLabel: String? = null
 ) {
     var editedName by rememberSaveable(userName) { mutableStateOf(userName) }
@@ -206,7 +207,7 @@ internal fun SettingsScreen(
                     }
                 }
             }
-            item {
+            if (showApiKeySettings) item {
                 ApiKeySettingsCard(
                     apiKey = apiKey,
                     onSave = onSaveApiKey,

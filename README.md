@@ -39,6 +39,19 @@ are no cloud anchors or Geospatial API calls. Unsupported devices use the
 ordinary camera compass view. GPS/compass alignment is approximate; the app does
 not recognize storefronts, obstacles, or safe crossings.
 
+## Restaurant data source
+
+All live restaurant discovery results and profile fields come from
+`public.restaurants` through the Supabase `nearby_restaurants` RPC. The active
+Home scan flow does not query Google Places or OpenStreetMap for listings and
+does not merge local Room records. The previously proposed OSM importer has
+been removed. Settings no longer asks for a Google API key.
+
+Add and maintain restaurants in Supabase Table Editor or SQL Editor. Supabase
+stores the listings you provide; it does not automatically contain every Labuan
+business. Missing records/details stay missing instead of being invented.
+See [restaurant data management](supabase/RESTAURANT_DATA.md).
+
 ## Supabase database and public configuration
 
 `supabase.public.properties` contains this project's **public publishable client
@@ -50,7 +63,13 @@ account profile. Never replace it with a service-role key or database password.
 The database must exist before live discovery can work. In your Supabase SQL
 Editor, run [supabase/setup.sql](supabase/setup.sql) if it has not been applied.
 Enable **Authentication → Providers → Email** for optional signup/sign-in.
-The script includes the supplied HALAL food courts:
+For your uploaded spreadsheet, run
+[supabase/imports/20261023_labuan_outscraper.sql](supabase/imports/20261023_labuan_outscraper.sql)
+instead: this single file includes setup, 328 selected operational food outlets,
+and the two original food courts. It preserves existing matched rows and can be
+run again without creating duplicates. It does not run automatically on app startup.
+
+The original setup includes the supplied HALAL food courts:
 
 - **Cafe UMSKAL** — 5.280285448386224, 115.17640486697412.
 - **Anjung Selera Sungai Pagar** — 5.28381416215476, 115.17329350236913.
@@ -61,9 +80,9 @@ Android account sessions are held only in memory.
 
 To connect a different project, copy `supabase.properties.example` to ignored
 `supabase.properties` and supply both public values there. Nonblank local values
-override the bundled configuration; blank values are ignored. For offline UI
-checks, use **Profile → Settings → Use demo mode**. The demo's Kuala Lumpur
-restaurants and routes are explicitly fictional.
+override the bundled configuration; blank values are ignored. Restaurant discovery
+uses live Supabase records only; it does not automatically fall back to local seed
+records or fictional restaurants.
 
 ## Build and validation
 
@@ -74,9 +93,9 @@ restaurants and routes are explicitly fictional.
 On Windows, use `gradlew.bat`. The APK is generated at
 `app/build/outputs/apk/debug/app-debug.apk`.
 
-Verified from a fresh source copy without local key or SDK properties: the APK
-build, all **36 native unit tests**, and Android lint pass. Blank local key fields
-also retain the bundled public defaults.
+Version 0.4.0 passes the debug APK build, Android lint, and 19 targeted Supabase,
+authentication, and screen regression tests. Physical-phone GPS/camera/AR and
+live Supabase availability still require testing.
 
 The native unit suite covers GPS calculations, 1 km filtering, marker projection,
 AR direction math, restaurant metadata, route progress/arrival, and mocked

@@ -41,7 +41,7 @@ Open **Tools → SDK Manager** and install:
 Accept the licenses for the components you install. Choose **JDK 21** under
 **Settings → Build, Execution, Deployment → Build Tools → Gradle → Gradle JDK**.
 On macOS, Settings may be named Preferences. Android Studio's bundled JDK 21
-can be used. The project uses Gradle 9.1.0, Android Gradle Plugin 9.0.1, and Kotlin
+can be used. The project uses Gradle 9.6.0, Android Gradle Plugin 9.4.1, and Kotlin
 2.3.20; the wrapper downloads the correct Gradle version automatically.
 
 Let the Gradle sync finish. Initial setup needs internet access to download
@@ -55,28 +55,23 @@ the phone. Select the phone in Android Studio's device toolbar. A real phone is
 best for GPS, camera, and compass testing.
 
 For an emulator, open **Tools → Device Manager → Create Device**, choose a Pixel
-model, download an API 36 system image, and start it. The guest demo can run
-without physical sensor hardware. Live heading availability depends on the
-emulated sensors.
+model, download an API 36 system image, and start it. Live heading availability depends on the emulated sensors; use emulator location
+controls to set a position near your stored restaurants.
 
-## 4. Run the app or guest demo
+## 4. Run the app
 
-Select the **app** run configuration and your device, then click the green
-**Run ▶** button. On the welcome screen, select **Continue as guest**. The bundled
-public configuration opens live mode. To try the labeled offline demo while
-database setup is pending, open **Profile → Settings → Use demo mode**, then
-return Home.
+Select the **app** run configuration and your device, then click **Run ▶**.
+Choose **Continue as guest**, or register/sign in with Supabase Auth.
 
-Try the main flow:
+1. Tap **Scan for Restaurant** and accept the location/camera consent.
+2. Allow precise location and camera access when Android prompts.
+3. Wait for GPS, then view camera markers or the restaurant list.
+4. Tap a restaurant to open its Supabase profile.
+5. Choose **Navigate** for an OpenStreetMap-based walking route and camera arrows.
 
-1. Open Home and tap **Scan for Restaurant**.
-2. Tap a restaurant marker to open its profile.
-3. Select **Navigate** and explore simulated route progress.
-4. Test the demo heading and movement controls.
-5. Open Profile and try Settings, Help, and Log out.
-
-Demo restaurant records and paths are fictional. They are for interaction
-testing and should not be followed as real walking directions.
+Live restaurant data comes only from Supabase within 1 km of the phone. No
+Google Places key is required. Empty results are not filled with fictional
+or local listings. A real phone is needed to verify camera/compass/AR alignment.
 
 ## 5. Create the live database and enable accounts
 
@@ -86,6 +81,12 @@ The file includes the complete restaurant schema, the 1 km search RPC, private
 `public.profiles`, Auth profile creation/backfill, and the two supplied HALAL
 food courts. The SQL has passed local checks; the live database has not been
 created automatically. Its public client key cannot run table-creation SQL.
+
+For your uploaded Labuan restaurant spreadsheet, the complete ready-to-run file is
+[supabase/imports/20261023_labuan_outscraper.sql](../supabase/imports/20261023_labuan_outscraper.sql).
+It includes setup plus 328 selected food outlets and your two original food courts.
+Copy the SQL file, not the CSV, into SQL Editor. Existing matched rows are preserved.
+This repository file does not apply itself to your live Supabase database.
 
 Under **Authentication → Providers**, enable **Email** for email/password sign-in
 and account creation. Supabase Auth stores and verifies passwords. The public
@@ -116,9 +117,9 @@ The two supplied records are:
 
 Their names, coordinates, and HALAL flags were supplied by the project owner;
 ratings and opening hours are not verified. When the phone is outside the 1 km
-radius, an empty result is expected. The optional fictional Kuala Lumpur seed
-and offline demo are separate from these records. Use **Profile → Settings →
-Use demo mode** when you want to test the sample screens away from the food courts.
+radius of every stored restaurant, an empty result is expected. For more Labuan
+locations, apply the supplied spreadsheet SQL import. Live discovery does not
+fall back to fictional data.
 
 To check accounts, create an account through the app and look for it under
 **Authentication → Users** in the dashboard. Its matching `public.profiles` row
@@ -152,7 +153,7 @@ lint reports are under `app/build/reports/`.
 | Gradle cannot find Java | Set Gradle JDK to JDK 21 in Android Studio settings. |
 | Android SDK is missing | Install SDK 36 and the listed tools through SDK Manager, then sync again. |
 | Device is missing | Start the emulator or authorize the phone's USB debugging prompt. |
-| The app opens Demo | Turn off Use demo mode under Profile → Settings; live public configuration is already bundled. |
+| Old demo/key settings appear | Pull the latest main branch, sync Gradle, and reinstall the app from Android Studio. |
 | No nearby restaurants | Run `supabase/setup.sql` in the SQL editor, then check GPS, internet, and the food courts being within 1 km. |
 | Sign-in or sign-up fails | Apply setup SQL, enable the email/password provider, and check email confirmation and credentials. |
 | Camera was denied | Allow camera access in the phone's app settings and retry. |
@@ -174,8 +175,8 @@ GPS and compass readings are still required to orient the arrow toward the route
 Use **Use compass camera** to return to the ordinary camera view. Unsupported
 phones or a declined AR runtime installation fall back automatically. Try a
 real route, background/resume the app, turn the phone, and confirm that stale GPS
-or heading pauses directional guidance. The demo uses simulated camera data
-and does not test the ARCore runtime.
+or heading pauses directional guidance. Automated screen tests do not validate
+the physical ARCore runtime.
 
 The arrival screen checks proximity to the restaurant coordinates, not just the
 routing service's snapped path endpoint. GPS proximity is approximate and does
