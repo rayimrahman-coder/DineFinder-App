@@ -121,3 +121,19 @@ and migration runs, both supplied food courts, restaurant radius/order/validatio
 public write denial, profile RLS, sign-up creation, backfill, and owner-only
 profile updates. It uses Auth stubs for local SQL checks and does not deploy a
 Supabase project or validate actual account email delivery.
+
+## Repair an older restaurant table
+
+If nearby search reports `42703: column r.description does not exist`, the live
+table predates fields required by the RPC. `CREATE TABLE IF NOT EXISTS` alone
+does not upgrade that table. Run the complete
+[existing-table repair](migrations/202610230002_repair_restaurant_profile_columns.sql)
+in SQL Editor. It adds only missing profile/geography columns, keeps existing
+restaurant records and policies, and casts legacy numeric/varchar fields to the
+RPC's declared output types without changing stored types or values. New halal
+values stay unknown, and rating/price defaults are unknown-data placeholders.
+The repair does not modify Auth users or profiles. No Android reinstall is needed.
+
+The corrected setup and spreadsheet import also reconcile existing missing
+fields. Local checks reproduce the exact missing-description failure and verify
+repeated repair, public-role discovery, and preserved owner-supplied halal flags.

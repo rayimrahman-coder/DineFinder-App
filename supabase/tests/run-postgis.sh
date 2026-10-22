@@ -83,4 +83,14 @@ do $$ begin
 end $$;
 SQL
 done
+# Reproduce the live failure on a pre-existing description-less restaurant table.
+sql -d setup_test < "$repo/supabase/tests/legacy_restaurant_columns.sql"
+for _ in 1 2; do
+  sql -d setup_test < "$repo/supabase/migrations/202610230002_repair_restaurant_profile_columns.sql"
+done
+sql -d setup_test < "$repo/supabase/tests/legacy_restaurant_repaired.sql"
+# The single-paste setup must repair that same legacy schema without a separate migration.
+sql -d setup_test < "$repo/supabase/tests/legacy_restaurant_columns.sql"
+sql -d setup_test < "$repo/supabase/setup.sql"
+sql -d setup_test < "$repo/supabase/tests/legacy_restaurant_repaired.sql"
 printf '%s\n' 'PostGIS radius checks, profile RLS, signup/backfill, HALAL discovery, and repeated setup/migration passed.'

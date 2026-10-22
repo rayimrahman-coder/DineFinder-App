@@ -42,6 +42,27 @@ create table if not exists public.restaurants (
   created_at timestamptz not null default now()
 );
 
+-- CREATE TABLE IF NOT EXISTS does not add fields to an older existing table.
+-- Add only missing fields; never overwrite existing restaurant information.
+alter table public.restaurants
+  add column if not exists cuisine text not null default 'Restaurant',
+  add column if not exists description text not null default '',
+  add column if not exists address text not null default '',
+  add column if not exists rating double precision not null default 0,
+  add column if not exists price_level integer not null default 1,
+  add column if not exists emoji text not null default '🍽️',
+  add column if not exists accent_hex bigint not null default 4280445331,
+  add column if not exists tags text[] not null default '{}',
+  add column if not exists opening_hours text not null default 'Hours unavailable',
+  add column if not exists is_halal boolean;
+
+-- Older manual tables may also lack the generated geography used by the RPC.
+alter table public.restaurants add column if not exists location
+  extensions.geography(point, 4326) generated always as (
+    extensions.st_setsrid(extensions.st_makepoint(longitude::double precision,
+      latitude::double precision), 4326)::extensions.geography
+  ) stored;
+
 create index if not exists restaurants_location_gist
   on public.restaurants using gist(location);
 
@@ -162,9 +183,12 @@ begin
   end if;
   origin := extensions.st_setsrid(extensions.st_makepoint($2, $1), 4326)::extensions.geography;
   return query
-    select r.id, r.name, r.cuisine, r.description, r.address,
-      r.latitude, r.longitude, r.rating, r.price_level, r.emoji,
-      r.accent_hex, r.tags, r.opening_hours,
+    select r.id, r.name::text, coalesce(r.cuisine::text, 'Restaurant'),
+      coalesce(r.description::text, ''), coalesce(r.address::text, ''),
+      r.latitude::double precision, r.longitude::double precision,
+      coalesce(r.rating::double precision, 0), coalesce(r.price_level::integer, 1),
+      coalesce(r.emoji::text, '🍽️'), coalesce(r.accent_hex::bigint, 4280445331),
+      coalesce(r.tags, '{}'::text[]), coalesce(r.opening_hours::text, 'Hours unavailable'),
       extensions.st_distance(r.location, origin) as distance_meters,
       r.is_halal
     from public.restaurants r

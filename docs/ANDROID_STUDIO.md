@@ -155,6 +155,7 @@ lint reports are under `app/build/reports/`.
 | Device is missing | Start the emulator or authorize the phone's USB debugging prompt. |
 | Old demo/key settings appear | Pull the latest main branch, sync Gradle, and reinstall the app from Android Studio. |
 | No nearby restaurants | Run `supabase/setup.sql` in the SQL editor, then check GPS, internet, and the food courts being within 1 km. |
+| Search reports missing `description` column | Run `supabase/migrations/202610230002_repair_restaurant_profile_columns.sql` in Supabase SQL Editor. Existing rows are preserved; no app reinstall is needed. |
 | Sign-in or sign-up fails | Apply setup SQL, enable the email/password provider, and check email confirmation and credentials. |
 | Camera was denied | Allow camera access in the phone's app settings and retry. |
 | No heading or markers | Test on a compass-equipped phone and follow the app's sensor guidance. |
