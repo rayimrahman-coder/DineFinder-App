@@ -178,6 +178,15 @@ copies the app key or account tokens. Share these details when reporting an
 empty search; enabling precise location is especially relevant when reported
 accuracy is hundreds of metres or more.
 
+Version 0.4.3 includes the HTTP response status and safe PostgreSQL/PostgREST
+error code for a failed nearby request. HTTP 401 points to rejected public
+connection settings, 403/42501 to denied permissions, PGRST203 to conflicting
+function overloads, and 42804/42702/42883 to a database-function issue. Server
+response bodies, keys and SQL internals are not copied. Configuration PASS
+checks syntax/presence only; the separate search check verifies access.
+GPS fix age is included explicitly. A checklist clock update no longer makes a
+newly arrived position briefly appear stale.
+
 An unsuccessful request now shows a search failure rather than claiming no
 restaurants exist. No-results messages are shown only after a successful search.
 To check database rows, the RPC and guest access independently of the phone, run

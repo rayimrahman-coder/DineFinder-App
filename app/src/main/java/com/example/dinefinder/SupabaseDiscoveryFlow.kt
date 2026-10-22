@@ -105,10 +105,12 @@ internal fun SupabaseDiscoveryFlow(model: AppViewModel) {
             val manager = context.getSystemService(ConnectivityManager::class.java)
             manager?.getNetworkCapabilities(manager.activeNetwork)?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
         }.getOrNull()
+        val nowForChecks = maxOf(checkTime, SystemClock.elapsedRealtime())
+        val rawDetails = searchDetailsText(state, precise, nowForChecks)
         val checks = scanChecklist(state, locate, precise, locationEnabled, networkValidated,
             SupabaseConfig(BuildConfig.SUPABASE_URL, BuildConfig.SUPABASE_PUBLISHABLE_KEY).isConfigured,
-            cameraReady, cameraError, cameraActive, checkTime)
-        val details = checks.joinToString("\n") { "${it.status}: ${it.title} — ${it.detail}" } + "\n\n" + searchDetailsText(state, precise)
+            cameraReady, cameraError, cameraActive, nowForChecks)
+        val details = checks.joinToString("\n") { "${it.status}: ${it.title} — ${it.detail}" } + "\n\n" + rawDetails
         AlertDialog(
             onDismissRequest = { showSearchDetails = false },
             title = { Text("Scan checklist") },
@@ -138,7 +140,7 @@ internal fun SupabaseDiscoveryFlow(model: AppViewModel) {
                         }
                     }
                     HorizontalDivider()
-                    Text(searchDetailsText(state, precise), style = MaterialTheme.typography.bodySmall)
+                    Text(rawDetails, style = MaterialTheme.typography.bodySmall)
                 }
             },
             confirmButton = { TextButton(onClick = { clipboard.setText(AnnotatedString(details)) }) { Text("Copy checks") } },
@@ -198,7 +200,7 @@ private fun SupabaseRestaurantProfile(restaurant: Restaurant, distance: Double?,
 }
 
 /** Includes only public connection metadata and location/search diagnostics, never keys. */
-internal fun searchDetailsText(state: AppState, precise: Boolean): String {
+internal fun searchDetailsText(state: AppState, precise: Boolean, nowElapsedMs: Long? = null): String {
     fun point(point: com.example.dinefinder.core.GeoPoint?) = point?.let {
         String.format(Locale.US, "%.6f, %.6f", it.latitude, it.longitude)
     } ?: "Unavailable"
@@ -214,6 +216,8 @@ internal fun searchDetailsText(state: AppState, precise: Boolean): String {
         appendLine("Supabase project: ${java.net.URI(BuildConfig.SUPABASE_URL).host}")
         appendLine("Phone GPS: ${point(state.position)}")
         appendLine("Accuracy: $accuracy")
+        val age = nowElapsedMs?.let { now -> state.sensors.lastFixElapsedMs?.let { now - it } }
+        appendLine("GPS fix age: ${age?.takeIf { it >= 0 }?.let { "${it / 1000} s${if (it > 45_000) " (stale)" else ""}" } ?: "Unavailable"}")
         appendLine("Precise location: ${if (precise) "Allowed" else "Not allowed — enable Precise location in Android app settings"}")
         appendLine("Search centre: ${point(state.lastSearchCenter)}")
         appendLine("Radius: 1,000 m")

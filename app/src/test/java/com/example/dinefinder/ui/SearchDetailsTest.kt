@@ -25,6 +25,13 @@ class SearchDetailsTest {
         assertFalse(details.contains("Completed: 0 results"))
     }
 
+    @Test fun gpsAgeIsReportedWithoutInferringThatEveryWaitingFixIsStale() {
+        val state = AppState(sensors = SensorSnapshot(position = point, lastFixElapsedMs = 990_000))
+        assertTrue(searchDetailsText(state, true, 1_000_000).contains("GPS fix age: 10 s"))
+        assertFalse(searchDetailsText(state, true, 1_000_000).contains("(stale)"))
+        assertTrue(searchDetailsText(state, true, 1_040_000).contains("GPS fix age: 50 s (stale)"))
+    }
+
     @Test fun locationAccuracyAndPermissionAreVisibleWithoutPublishingCredentials() {
         val details = searchDetailsText(AppState(sensors = SensorSnapshot(position = point, accuracyMeters = 1500f)), false)
         assertTrue(details.contains("Phone GPS: 5.280285, 115.176405"))

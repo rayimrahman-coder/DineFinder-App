@@ -75,6 +75,55 @@ class DineFinderApiTest {
         assertFalse(error.message.orEmpty().contains("server-internal-detail"))
     }
 
+    @Test fun nearbyCampusSearchKeepsBothOwnerSuppliedFoodCourts() = runBlocking {
+        val cafe = restaurant().put("id", "cafe-umskal").put("name", "Cafe UMSKAL")
+            .put("latitude", 5.280285448386224).put("longitude", 115.17640486697412)
+        val anjung = restaurant().put("id", "anjung").put("name", "Anjung Selera Sungai Pagar")
+            .put("latitude", 5.28381416215476).put("longitude", 115.17329350236913)
+        server.enqueue(json(JSONArray().put(cafe).put(anjung).toString()))
+        assertEquals(listOf("Cafe UMSKAL", "Anjung Selera Sungai Pagar"),
+            api.nearby(GeoPoint(5.280285448386224, 115.17640486697412)).map { it.name })
+    }
+
+    @Test fun rejectedPublicKeyReportsHttpStatusWithoutEchoingResponseBody() = runBlocking {
+        server.enqueue(json("""{"message":"private-internal-response"}""", 401))
+        val message = expectApiError { api.nearby(from) }.message.orEmpty()
+        assertTrue(message.contains("HTTP 401"))
+        assertTrue(message.contains("publishable key"))
+        assertFalse(message.contains("private-internal-response"))
+    }
+
+    @Test fun forbiddenPublicReadReportsPermissionFailure() = runBlocking {
+        server.enqueue(json("""{"code":"42501","message":"private schema details"}""", 403))
+        val message = expectApiError { api.nearby(from) }.message.orEmpty()
+        assertTrue(message.contains("HTTP 403, code 42501"))
+        assertTrue(message.contains("public read policies"))
+        assertFalse(message.contains("private schema details"))
+    }
+
+    @Test fun databaseFunctionFailureReportsItsBoundedProtocolCode() = runBlocking {
+        server.enqueue(json("""{"code":"42804","message":"private SQL details"}""", 500))
+        val message = expectApiError { api.nearby(from) }.message.orEmpty()
+        assertTrue(message.contains("HTTP 500, code 42804"))
+        assertTrue(message.contains("database function failed"))
+        assertFalse(message.contains("private SQL details"))
+    }
+
+    @Test fun overloadedNearbyFunctionHasSpecificAction() = runBlocking {
+        server.enqueue(json("""{"code":"PGRST203"}""", 300))
+        val message = expectApiError { api.nearby(from) }.message.orEmpty()
+        assertTrue(message.contains("function signatures conflict"))
+        assertTrue(message.contains("HTTP 300, code PGRST203"))
+    }
+
+    @Test fun arbitraryServerTextIsNotAcceptedAsAProtocolCode() = runBlocking {
+        server.enqueue(json("""{"code":"secret-data-with-lowercase","message":"private"}""", 400))
+        val message = expectApiError { api.nearby(from) }.message.orEmpty()
+        assertTrue(message.contains("HTTP 400"))
+        assertFalse(message.contains("secret-data-with-lowercase"))
+        assertFalse(message.contains("private"))
+    }
+
     @Test fun legacyAnonJwtUsesBearerOnlyOnSupabaseRequests() = runBlocking {
         val key = jwt("anon")
         val legacy = DineFinderApi(SupabaseConfig(server.url("/").toString(), key))

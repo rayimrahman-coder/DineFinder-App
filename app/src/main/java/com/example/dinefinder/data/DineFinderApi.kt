@@ -80,7 +80,20 @@ class DineFinderApi(
             if (response.status == 404 || code in setOf("PGRST202", "42P01")) {
                 throw ApiException("Restaurant database is not set up yet. Run supabase/setup.sql in the Supabase SQL Editor.")
             }
-            throw ApiException("Nearby restaurants could not be loaded. Please try again.")
+            // Report only bounded protocol codes, never the server body, SQL details,
+            // headers, keys or user data. A configured key is not proof of access.
+            val safeCode = code.takeIf { it.matches(Regex("[A-Z0-9_]{1,24}")) }
+            val diagnostic = "HTTP ${response.status}" + (safeCode?.let { ", code $it" } ?: "")
+            val action = when {
+                code == "PGRST203" -> "Multiple nearby_restaurants function signatures conflict. Check the function definitions in Supabase."
+                code == "42501" || response.status == 403 -> "Supabase denied restaurant access. Check function/table grants and public read policies."
+                response.status == 401 -> "Supabase rejected the public connection. Verify the project URL and publishable key belong to the same active project."
+                response.status == 429 -> "Supabase is limiting requests. Wait before retrying."
+                code in setOf("42804", "42702", "42883") -> "The nearby_restaurants database function failed. Run the diagnostic SQL and check its definition."
+                response.status in setOf(502, 503, 504) -> "The Supabase service is temporarily unavailable. Check the project status and retry."
+                else -> "The nearby restaurant request failed. Run the diagnostic SQL in Supabase."
+            }
+            throw ApiException("$action ($diagnostic)")
         }
         parseSafely("The restaurant service returned invalid data.") {
             val rows = JSONArray(response.body)
