@@ -35,6 +35,8 @@ internal data class AppState(
     val error: String? = null,
     val sensors: SensorSnapshot = SensorSnapshot(),
     val restaurants: List<CoreRestaurant> = emptyList(),
+    val lastSearchCenter: GeoPoint? = null,
+    val lastSearchCount: Int? = null,
     val selected: CoreRestaurant? = null,
     val destination: CoreRestaurant? = null,
     val route: RoutePlan? = null,
@@ -147,7 +149,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         state = state.copy(scan = false, profile = false, consent = false,
             loading = false, routing = false, restaurants = emptyList(), selected = null,
             route = null, destination = null, demoProgress = 0.0, error = null,
-            sensors = SensorSnapshot())
+            sensors = SensorSnapshot(), lastSearchCenter = null, lastSearchCount = null)
         device.stop()
     }
 
@@ -192,12 +194,12 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         queryJob?.cancel()
         lastQuery = point
         lastQueryAt = SystemClock.elapsedRealtime()
-        state = state.copy(loading = true, error = null)
+        state = state.copy(loading = true, error = null, lastSearchCenter = point, lastSearchCount = null)
         queryJob = viewModelScope.launch {
             try {
                 val places = api.nearby(point)
                 if (generation == current && state.scan && !state.demo) {
-                    state = state.copy(restaurants = places.filter { distanceMeters(point, it.location) <= 1000.0 }, loading = false)
+                    state = state.copy(restaurants = places.filter { distanceMeters(point, it.location) <= 1000.0 }, loading = false, lastSearchCount = places.size)
                 }
             } catch (cancelled: CancellationException) { throw cancelled
             } catch (error: Exception) {

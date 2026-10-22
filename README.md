@@ -93,7 +93,7 @@ records or fictional restaurants.
 On Windows, use `gradlew.bat`. The APK is generated at
 `app/build/outputs/apk/debug/app-debug.apk`.
 
-Version 0.4.0 passes the debug APK build, Android lint, and 19 targeted Supabase,
+Version 0.4.1 passes the debug APK build, Android lint, and 23 targeted Supabase,
 authentication, and screen regression tests. Physical-phone GPS/camera/AR and
 live Supabase availability still require testing.
 

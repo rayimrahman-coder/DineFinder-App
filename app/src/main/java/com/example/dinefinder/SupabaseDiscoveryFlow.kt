@@ -13,6 +13,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
@@ -29,6 +31,8 @@ internal fun SupabaseDiscoveryFlow(model: AppViewModel) {
     val state = model.state
     val context = LocalContext.current
     val owner = LocalLifecycleOwner.current
+    var showSearchDetails by remember { mutableStateOf(false) }
+    val clipboard = LocalClipboardManager.current
     val permissions = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
         fun has(permission: String) = ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
         model.scanWithPermissions(
@@ -64,6 +68,19 @@ internal fun SupabaseDiscoveryFlow(model: AppViewModel) {
             onRetry = model::retry, onRecalculate = model::recalculate,
             onHeadingChange = model::setHeading, onWalkChange = model::setWalk,
             demoProgress = state.demoProgress,
+            onShowSearchDetails = { showSearchDetails = true },
+            searchCompleted = state.lastSearchCount != null,
+        )
+    }
+    if (state.scan && showSearchDetails) {
+        val precise = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        val details = searchDetailsText(state, precise)
+        AlertDialog(
+            onDismissRequest = { showSearchDetails = false },
+            title = { Text("Search details") },
+            text = { Column(Modifier.verticalScroll(rememberScrollState())) { Text(details) } },
+            confirmButton = { TextButton(onClick = { clipboard.setText(AnnotatedString(details)) }) { Text("Copy details") } },
+            dismissButton = { TextButton(onClick = { showSearchDetails = false }) { Text("Close") } },
         )
     }
     if (state.consent) AlertDialog(
@@ -111,4 +128,31 @@ private fun SupabaseRestaurantProfile(restaurant: Restaurant, distance: Double?,
             }
         }
     }
+}
+
+/** Includes only public connection metadata and location/search diagnostics, never keys. */
+internal fun searchDetailsText(state: AppState, precise: Boolean): String {
+    fun point(point: com.example.dinefinder.core.GeoPoint?) = point?.let {
+        String.format(Locale.US, "%.6f, %.6f", it.latitude, it.longitude)
+    } ?: "Unavailable"
+    val accuracy = state.sensors.accuracyMeters?.let { "±${it.toInt()} m" } ?: "Unavailable"
+    val searchStatus = when {
+        state.loading -> "Searching"
+        state.lastSearchCount != null -> "Completed: ${state.lastSearchCount} results"
+        state.error != null -> "Failed: ${state.error}"
+        else -> "Not completed"
+    }
+    return buildString {
+        appendLine("DineFinder ${BuildConfig.VERSION_NAME}")
+        appendLine("Supabase project: ${java.net.URI(BuildConfig.SUPABASE_URL).host}")
+        appendLine("Phone GPS: ${point(state.position)}")
+        appendLine("Accuracy: $accuracy")
+        appendLine("Precise location: ${if (precise) "Allowed" else "Not allowed — enable Precise location in Android app settings"}")
+        appendLine("Search centre: ${point(state.lastSearchCenter)}")
+        appendLine("Radius: 1,000 m")
+        appendLine("Search: $searchStatus")
+        appendLine("Currently visible in list: ${state.restaurants.count { restaurant -> state.position?.let { distanceMeters(it, restaurant.location) <= 1000.0 } == true }}")
+        if ((state.sensors.accuracyMeters ?: 0f) > 100f) appendLine("Location accuracy is low. Enable precise location and retry outdoors.")
+        state.sensors.locationError?.let { appendLine(it) }
+    }.trim()
 }

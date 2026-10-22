@@ -55,6 +55,8 @@ fun ScanScreen(
     onHeadingChange: (Double) -> Unit,
     onWalkChange: (Double) -> Unit,
     demoProgress: Double,
+    onShowSearchDetails: () -> Unit = {},
+    searchCompleted: Boolean = true,
 ) {
     var listVisible by rememberSaveable { mutableStateOf(false) }
     var directionsVisible by remember(route) { mutableStateOf(false) }
@@ -76,6 +78,7 @@ fun ScanScreen(
                 Text(if (route == null) "Discover restaurants" else "Walking navigation", style = MaterialTheme.typography.titleMedium)
                 Text(if (route == null) "Within 1 km · tap a dining marker" else destination?.name.orEmpty(), color = DineMuted, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
+            IconButton(onClick = onShowSearchDetails) { Icon(Icons.Default.Info, "Search details") }
             TextButton(onClick = { listVisible = !listVisible }) { Text(if (listVisible) "Camera" else "List") }
         }
         if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
@@ -89,18 +92,19 @@ fun ScanScreen(
                 if (isDemo) item { ScanNotice("Demo · fictional restaurants", Icons.Default.Science) }
                 if (problems.isNotEmpty()) item { Text(problems.joinToString("\n"), color = DineRed) }
                 if (restaurants.isEmpty()) item {
-                    Text(if (position == null) "Waiting for a fresh GPS fix" else if (busy) "Searching…" else "No restaurants recorded within 1 km")
+                    Text(if (error != null) "Search failed. See the error above and retry." else if (position == null) "Waiting for a fresh GPS fix" else if (busy || !searchCompleted) "Searching…" else "No restaurants recorded within 1 km")
                 }
                 items(restaurants, key = { it.id }) { restaurant ->
                     ScanRestaurantCard(restaurant, position?.let { distanceMeters(it, restaurant.location) }, busy, onSelect)
                 }
+                item { TextButton(onClick = onShowSearchDetails) { Text("Search details") } }
                 item { OutlinedButton(onClick = retry, enabled = !busy) { Text("Refresh location and search") } }
             }
         } else {
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 ScanCameraScene(position, validHeading, restaurants, route, progress, isDemo, busy,
                     cameraAllowed, cameraAttempt, { cameraError = it }, onSelect,
-                    arEnabled, pathEndsNearby, { arStatus = it }, { arEnabled = false; arStatus = "Local 3D AR is unavailable. Using the camera compass view." },
+                    arEnabled, pathEndsNearby, error, searchCompleted, { arStatus = it }, { arEnabled = false; arStatus = "Local 3D AR is unavailable. Using the camera compass view." },
                     Modifier.fillMaxSize())
                 Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     if (route != null) Surface(color = Color.Black.copy(alpha = .75f), shape = RoundedCornerShape(16.dp)) {
@@ -142,7 +146,9 @@ fun ScanScreen(
                         }
                     }
                     if (route == null) FilledTonalButton(onClick = { listVisible = true }, Modifier.fillMaxWidth()) {
-                        Text("${restaurants.size} nearby restaurants · View list")
+                        Text(if (error != null && restaurants.isEmpty()) "Search failed · View details"
+                            else if (!searchCompleted && restaurants.isEmpty()) "Searching · View list"
+                            else "${restaurants.size} nearby restaurants · View list")
                     }
                 }
             }
@@ -189,6 +195,8 @@ private fun ScanCameraScene(
     onSelect: (Restaurant) -> Unit,
     arEnabled: Boolean,
     pathEndsNearby: Boolean,
+    searchError: String?,
+    searchCompleted: Boolean,
     onArStatus: (String) -> Unit,
     onArUnavailable: () -> Unit,
     modifier: Modifier,
@@ -235,13 +243,14 @@ private fun ScanCameraScene(
             }
         }
         val guidance = when {
+            searchError != null && route == null && restaurants.isEmpty() -> "Restaurant search could not be completed. Open List to see the error."
             position == null -> if (busy) "Getting your GPS location…" else "A current GPS fix is needed to place restaurant markers."
             !isDemo && !cameraAllowed -> "Camera access is unavailable. You can still use the restaurant list."
             progress?.hasArrived == true -> "You’ve arrived"
             pathEndsNearby -> "The mapped path ends nearby. Check the restaurant entrance."
             progress?.isOffRoute == true -> "Off route · recalculate your walking route"
             heading == null -> "A compass heading isn’t available. Use the restaurant list and written walking directions."
-            route == null && restaurants.isEmpty() -> if (busy) "Finding nearby restaurants…" else "No restaurants found within 1 km"
+            route == null && restaurants.isEmpty() -> if (busy || !searchCompleted) "Finding nearby restaurants…" else "No restaurants found within 1 km"
             route == null && visibleMarkers.isEmpty() -> "Turn slowly to find nearby restaurant markers"
             else -> null
         }

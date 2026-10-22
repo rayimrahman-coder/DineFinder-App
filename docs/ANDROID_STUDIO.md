@@ -164,6 +164,23 @@ Use a physical phone to validate live alignment and permissions. Camera guidance
 uses approximate GPS/compass bearings and does not detect obstacles or safe
 crossings.
 
+## Diagnose an empty restaurant search
+
+On the scan screen, tap the **information icon → Copy details**. This reports
+phone coordinates, location accuracy/precise permission, the actual search
+centre, radius, last completed result count, and a safe error message. It never
+copies the app key or account tokens. Share these details when reporting an
+empty search; enabling precise location is especially relevant when reported
+accuracy is hundreds of metres or more.
+
+An unsuccessful request now shows a search failure rather than claiming no
+restaurants exist. No-results messages are shown only after a successful search.
+To check database rows, the RPC and guest access independently of the phone, run
+[supabase/diagnose_nearby.sql](../supabase/diagnose_nearby.sql) in SQL Editor.
+This is read-only. It compares normal and public-role searches at the supplied
+Cafe UMSKAL position; both food courts should be returned if their saved
+coordinates, RPC and read policies match the project setup.
+
 ## Local 3D AR navigation without a Google API key
 
 On a compatible phone, selecting Navigate starts local ARCore guidance. Accept
