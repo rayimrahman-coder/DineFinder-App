@@ -63,7 +63,7 @@ controls to set a position near your stored restaurants.
 Select the **app** run configuration and your device, then click **Run ▶**.
 Choose **Continue as guest**, or register/sign in with Supabase Auth.
 
-1. Tap **Scan for Restaurant** and accept the location/camera consent.
+1. Tap **Scan for Restaurant**. If access is missing, the **Allow camera & location** explanation appears. **Not now** closes it; **Continue** opens Android runtime permission requests.
 2. Allow precise location and camera access when Android prompts.
 3. Wait for GPS, then view camera markers or the restaurant list.
 4. Tap a restaurant to open its Supabase profile.
@@ -72,6 +72,13 @@ Choose **Continue as guest**, or register/sign in with Supabase Auth.
 Live restaurant data comes only from Supabase within 1 km of the phone. No
 Google Places key is required. Empty results are not filled with fictional
 or local listings. A real phone is needed to verify camera/compass/AR alignment.
+
+If camera and foreground location are already granted, Scan opens directly.
+After ordinary denial, Try again uses the same Android permission request.
+When access is blocked, Open settings opens DineFinder's application settings;
+returning rechecks grants. The restaurant list can still work without camera
+access. Precise location is recommended; existing approximate-location support
+is preserved.
 
 ## 5. Create the live database and enable accounts
 

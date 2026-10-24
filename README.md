@@ -84,6 +84,20 @@ override the bundled configuration; blank values are ignored. Restaurant discove
 uses live Supabase records only; it does not automatically fall back to local seed
 records or fictional restaurants.
 
+## Camera and location permission dialog
+
+The existing Compose permission explanation matches the supplied reference:
+white rounded card, overlapping Material camera/location icons, centred copy,
+and equal-width Not now/Continue buttons. Continue reuses Android's existing
+runtime request launcher. Already granted camera plus foreground location skip
+the explanation. Ordinary denials allow retry; blocked permissions offer app
+settings and grants are checked again on return. Approximate location remains
+supported by the existing scan flow without repeated permission prompts.
+
+The card scrolls on short screens and respects system text scaling. Its opening
+animation uses Compose's system animation clock. No image assets, new UI
+packages, Flutter project, or backend changes were introduced.
+
 ## Scan checklist
 
 In Scan mode, tap **Checks** for 12 automatic checks covering permissions,
@@ -107,7 +121,7 @@ use `supabase/diagnose_nearby.sql` to compare database and public-role searches.
 On Windows, use `gradlew.bat`. The APK is generated at
 `app/build/outputs/apk/debug/app-debug.apk`.
 
-Version 0.4.3 passes the debug APK build, Android lint, and 38 targeted Supabase,
+Version 0.4.4 passes the debug APK build, Android lint, and 49 targeted Supabase,
 authentication, and screen regression tests. Physical-phone GPS/camera/AR and
 live Supabase availability still require testing.
 

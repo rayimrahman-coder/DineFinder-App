@@ -2,11 +2,16 @@ package com.example.dinefinder
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.content.Intent
+import android.content.Context
+import android.net.Uri
+import android.provider.Settings
 import android.location.LocationManager
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.SystemClock
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
@@ -28,12 +33,14 @@ import androidx.compose.ui.unit.dp
 import com.example.dinefinder.data.SupabaseConfig
 import kotlinx.coroutines.delay
 import androidx.core.content.ContextCompat
+import androidx.core.app.ActivityCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.dinefinder.core.Restaurant
 import com.example.dinefinder.core.distanceMeters
 import com.example.dinefinder.ui.ScanScreen
+import com.example.dinefinder.ui.CameraLocationPermissionDialog
 import java.util.Locale
 
 /** Live discovery/profile data comes exclusively from DineFinderApi's Supabase RPC. */
@@ -54,17 +61,60 @@ internal fun SupabaseDiscoveryFlow(model: AppViewModel) {
         }
     }
     val clipboard = LocalClipboardManager.current
-    val permissions = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
-        fun has(permission: String) = ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
-        model.scanWithPermissions(
-            has(Manifest.permission.ACCESS_FINE_LOCATION) || has(Manifest.permission.ACCESS_COARSE_LOCATION),
-            has(Manifest.permission.CAMERA),
-        )
+    val activity = LocalActivity.current
+    val permissionHistory = remember(context) { context.getSharedPreferences("dinefinder_permissions", Context.MODE_PRIVATE) }
+    var showPermissionHelp by remember { mutableStateOf(false) }
+    var permissionBlocked by remember { mutableStateOf(false) }
+    fun granted(permission: String) = ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
+    fun hasLocation() = granted(Manifest.permission.ACCESS_FINE_LOCATION) || granted(Manifest.permission.ACCESS_COARSE_LOCATION)
+    fun blocked(permission: String) = activity != null &&
+        permissionHistory.getBoolean("asked:$permission", false) &&
+        !ActivityCompat.shouldShowRequestPermissionRationale(activity, permission)
+    fun hasBlockedPermission() =
+        (!granted(Manifest.permission.CAMERA) && blocked(Manifest.permission.CAMERA)) ||
+        (!hasLocation() && blocked(Manifest.permission.ACCESS_FINE_LOCATION) && blocked(Manifest.permission.ACCESS_COARSE_LOCATION))
+    val settings = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        // Settings has no permission-result payload; re-read actual grants on return.
+        model.scanWithPermissions(hasLocation(), granted(Manifest.permission.CAMERA))
+    }
+    val permissions = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
+        // A cancelled system sheet returns an empty map, not a permanent denial.
+        if (result.isNotEmpty()) permissionHistory.edit().apply {
+            result.keys.forEach { putBoolean("asked:$it", true) }
+        }.apply()
+        val location = hasLocation()
+        val camera = granted(Manifest.permission.CAMERA)
+        model.scanWithPermissions(location, camera)
+        if (result.isNotEmpty() && (!location || !camera)) {
+            permissionBlocked = hasBlockedPermission()
+            showPermissionHelp = true
+        }
+    }
+    fun requestPermissions() {
+        model.dismissConsent()
+        val location = hasLocation()
+        val camera = granted(Manifest.permission.CAMERA)
+        if (location && camera) model.scanWithPermissions(location = true, camera = true)
+        else if (hasBlockedPermission()) {
+            permissionBlocked = true
+            showPermissionHelp = true
+        } else permissions.launch(buildList {
+            if (!location) {
+                add(Manifest.permission.ACCESS_COARSE_LOCATION)
+                add(Manifest.permission.ACCESS_FINE_LOCATION)
+            }
+            if (!camera) add(Manifest.permission.CAMERA)
+        }.toTypedArray())
     }
     DisposableEffect(owner, model) {
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
-                Lifecycle.Event.ON_START -> model.setForeground(true)
+                Lifecycle.Event.ON_START -> {
+                    model.setForeground(true)
+                    if (model.state.consent && hasLocation() && granted(Manifest.permission.CAMERA)) {
+                        model.scanWithPermissions(location = true, camera = true)
+                    }
+                }
                 Lifecycle.Event.ON_STOP -> model.setForeground(false)
                 else -> Unit
             }
@@ -152,16 +202,25 @@ internal fun SupabaseDiscoveryFlow(model: AppViewModel) {
             },
         )
     }
-    if (state.consent) AlertDialog(
-        onDismissRequest = model::dismissConsent,
-        title = { Text("Find restaurants around you") },
-        text = { Text("Allow location and camera access to find restaurants stored in Supabase within 1 km. Camera frames stay on your device.") },
-        dismissButton = { TextButton(onClick = model::dismissConsent) { Text("Later") } },
-        confirmButton = { TextButton(onClick = {
-            model.dismissConsent()
-            permissions.launch(arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION,
-                Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.CAMERA))
-        }) { Text("Continue") } },
+    if (state.consent) CameraLocationPermissionDialog(
+        onDismiss = model::dismissConsent,
+        onContinue = ::requestPermissions,
+    )
+    if (showPermissionHelp) AlertDialog(
+        onDismissRequest = { showPermissionHelp = false },
+        title = { Text(if (permissionBlocked) "Allow access in Settings" else "Permissions not granted") },
+        text = { Text(if (permissionBlocked)
+            "Camera or location access is blocked. Open app settings to allow access, then return to DineFinder."
+            else "Location helps find nearby restaurants, and the camera enables AR guidance. You can try again or continue without granting access.") },
+        dismissButton = { TextButton(onClick = { showPermissionHelp = false }) { Text("Not now") } },
+        confirmButton = {
+            TextButton(onClick = {
+                showPermissionHelp = false
+                if (permissionBlocked) settings.launch(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                    Uri.fromParts("package", context.packageName, null)))
+                else requestPermissions()
+            }) { Text(if (permissionBlocked) "Open settings" else "Try again") }
+        },
     )
     if (!state.scan && state.error != null) AlertDialog(
         onDismissRequest = model::dismissError, title = { Text("DineFinder") },

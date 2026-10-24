@@ -129,7 +129,14 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         if (state.demo) {
             state = state.copy(scan = true, profile = false, error = null,
                 restaurants = DemoData.nearby(DemoData.origin))
-        } else state = state.copy(consent = true)
+        } else {
+            val application = getApplication<Application>()
+            fun granted(permission: String) = ContextCompat.checkSelfPermission(application, permission) == PackageManager.PERMISSION_GRANTED
+            val location = granted(Manifest.permission.ACCESS_FINE_LOCATION) || granted(Manifest.permission.ACCESS_COARSE_LOCATION)
+            val camera = granted(Manifest.permission.CAMERA)
+            if (location && camera) scanWithPermissions(location = true, camera = true)
+            else state = state.copy(consent = true)
+        }
     }
     internal fun dismissConsent() { state = state.copy(consent = false) }
 
