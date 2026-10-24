@@ -97,13 +97,13 @@ fun ScanScreen(
             val density = LocalDensity.current
             val fontScale = density.fontScale.coerceAtLeast(1f)
             val heightPx = with(density) { maxHeight.toPx() }
-            val collapsedHeight = minOf(88.dp * fontScale, maxHeight * .55f)
+            val collapsedHeight = minOf(72.dp * fontScale, maxHeight * .55f)
             val halfHeight = minOf(maxHeight - 16.dp,
                 maxOf(collapsedHeight + 32.dp, minOf(280.dp * fontScale, maxHeight * .75f)))
             val halfTop = with(density) { (maxHeight - halfHeight).toPx() }.coerceAtLeast(0f)
             val collapsedTop = with(density) { (maxHeight - collapsedHeight).toPx() }.coerceAtLeast(halfTop + 1f)
             val sheet = rememberSaveable(saver = AnchoredDraggableState.Saver<DiscoverySheetPosition>()) {
-                AnchoredDraggableState(DiscoverySheetPosition.Half)
+                AnchoredDraggableState(DiscoverySheetPosition.Collapsed)
             }
             val anchors = remember(heightPx, halfTop, collapsedTop) { DraggableAnchors {
                 DiscoverySheetPosition.Expanded at 0f
@@ -112,7 +112,7 @@ fun ScanScreen(
             } }
             SideEffect { sheet.updateAnchors(anchors, sheet.targetValue) }
             val scope = rememberCoroutineScope()
-            val sheetTop = (sheet.offset.takeIf { it.isFinite() } ?: halfTop).coerceIn(0f, collapsedTop)
+            val sheetTop = (sheet.offset.takeIf { it.isFinite() } ?: collapsedTop).coerceIn(0f, collapsedTop)
             val cameraHeight = if (route == null) with(density) { sheetTop.toDp() } else maxHeight
             BackHandler(enabled = route == null && sheet.currentValue == DiscoverySheetPosition.Expanded) {
                 scope.launch { sheet.animateTo(DiscoverySheetPosition.Half, tween(240)) }

@@ -123,12 +123,14 @@ internal fun RestaurantDiscoverySheet(
         Column {
             Column(Modifier.fillMaxWidth().anchoredDraggable(state, Orientation.Vertical,
                 flingBehavior = AnchoredDraggableDefaults.flingBehavior(state)).testTag("restaurant_sheet_handle")) {
-                Box(Modifier.align(Alignment.CenterHorizontally).padding(top = 10.dp, bottom = 7.dp)
+                Box(Modifier.align(Alignment.CenterHorizontally).padding(top = if (collapsed) 6.dp else 10.dp, bottom = if (collapsed) 3.dp else 7.dp)
                     .size(34.dp, 4.dp).background(Color(0xFFA6AFB4), CircleShape))
                 Row(Modifier.fillMaxWidth().padding(start = 24.dp, end = 18.dp, bottom = 8.dp),
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                        Text(count, color = DiscoveryInk, fontSize = 20.sp, lineHeight = 25.sp, fontWeight = FontWeight.Bold)
+                        Text(if (collapsed) "Swipe up for restaurants" else count, color = DiscoveryInk,
+                            fontSize = if (collapsed) 14.sp else 20.sp, lineHeight = if (collapsed) 20.sp else 25.sp,
+                            fontWeight = if (collapsed) FontWeight.Medium else FontWeight.Bold)
                         if (!collapsed) Text("Swipe up to explore · Swipe down to minimise", color = DiscoveryMuted, fontSize = 12.sp, lineHeight = 17.sp)
                     }
                     OutlinedIconButton(onClick = toggle, modifier = Modifier.size(40.dp), border = BorderStroke(1.dp, DiscoveryBorder)) {

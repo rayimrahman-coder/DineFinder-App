@@ -30,8 +30,8 @@ class SearchFailureScreenTest {
             )
         }
         compose.onNodeWithText("No restaurants found within 1 km").assertDoesNotExist()
-        compose.onNodeWithText("Search unavailable").assertIsDisplayed()
         compose.onNodeWithContentDescription("Expand restaurants").performClick()
+        compose.onNodeWithText("Search unavailable").assertIsDisplayed()
         compose.onNodeWithText("Unable to connect to Supabase.").assertIsDisplayed()
         compose.onNodeWithText("No restaurants recorded within 1 km").assertDoesNotExist()
     }

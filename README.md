@@ -104,7 +104,9 @@ The camera screen uses the permission dialog's white, forest-green and mint
 palette, with a compact header and no Camera/List tabs. Full-name restaurant
 markers follow compass bearings and stay above the restaurant panel.
 
-Drag the bottom panel between collapsed, half-open and expanded positions, or
+The restaurant panel starts minimised with a slim swipe handle; results stay hidden
+until you swipe up or tap the chevron. Drag it between collapsed, half-open and
+expanded positions, or
 use its chevron and accessibility actions. Expand it to browse and scroll nearby
 restaurants; tap a marker or row to open the existing profile and navigation.
 The camera stays mounted while the panel moves. Counts, names, distances and
@@ -133,7 +135,7 @@ use `supabase/diagnose_nearby.sql` to compare database and public-role searches.
 On Windows, use `gradlew.bat`. The APK is generated at
 `app/build/outputs/apk/debug/app-debug.apk`.
 
-Version 0.5.0 passes the debug APK build, Android lint, and 60 targeted Supabase,
+Version 0.5.1 passes the debug APK build, Android lint, and 60 targeted Supabase,
 authentication, marker-layout, and screen regression tests. Physical-phone GPS/camera/AR and
 live Supabase availability still require testing.
 

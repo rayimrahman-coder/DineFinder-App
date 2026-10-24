@@ -50,6 +50,10 @@ class RestaurantDiscoveryScreenTest {
         compose.onNodeWithText("Camera",substring=false).assertDoesNotExist()
         compose.onNodeWithText("List",substring=false).assertDoesNotExist()
         compose.onNodeWithContentDescription("Scan checklist").assertIsDisplayed()
+        state("Collapsed")
+        compose.onNodeWithTag("nearby_restaurant_list").assertDoesNotExist()
+        compose.onNodeWithText("Swipe up for restaurants").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Expand restaurants").performClick()
         state("Half")
         compose.onAllNodesWithText(anjung.name).filter(hasAnyAncestor(hasTestTag("restaurant_discovery_sheet"))).onFirst().assertIsDisplayed()
         preview("half")
@@ -57,10 +61,12 @@ class RestaurantDiscoveryScreenTest {
     @Test fun chevronCanExpandMinimiseAndRestoreWithoutDragging() {
         screen()
         compose.onNodeWithContentDescription("Expand restaurants").performClick()
+        state("Half")
+        compose.onNodeWithContentDescription("Expand restaurants").performClick()
         state("Expanded");preview("expanded")
         compose.onNodeWithContentDescription("Collapse restaurants").performClick()
         state("Collapsed");preview("collapsed")
-        compose.onNodeWithText("2 nearby restaurants").assertIsDisplayed()
+        compose.onNodeWithText("Swipe up for restaurants").assertIsDisplayed()
         compose.onNodeWithTag("nearby_restaurant_list").assertDoesNotExist()
         compose.onNodeWithContentDescription("Expand restaurants").performClick()
         state("Half")
@@ -81,6 +87,7 @@ class RestaurantDiscoveryScreenTest {
         val records=(0..19).map { cafe.copy(id="r$it",name="Campus Restaurant $it") }
         screen(records,{selected=it.id})
         compose.onNodeWithContentDescription("Expand restaurants").performClick()
+        compose.onNodeWithContentDescription("Expand restaurants").performClick()
         compose.onNodeWithTag("nearby_restaurant_list").performScrollToNode(hasText("Campus Restaurant 19"))
         compose.onAllNodesWithText("Campus Restaurant 19").filter(hasAnyAncestor(hasTestTag("restaurant_discovery_sheet"))).onFirst().performClick()
         compose.runOnIdle { assertEquals("r19",selected) }
@@ -88,6 +95,7 @@ class RestaurantDiscoveryScreenTest {
     }
     @Test fun swipingTheListExpandsPanelBeforeScrollingItsRows() {
         screen((0..19).map { cafe.copy(id="r$it",name="Campus Restaurant $it") })
+        compose.onNodeWithContentDescription("Expand restaurants").performClick()
         compose.onNodeWithTag("nearby_restaurant_list").performTouchInput { swipeUp() }
         state("Expanded")
         compose.onNodeWithTag("nearby_restaurant_list").performScrollToNode(hasText("Campus Restaurant 19"))
@@ -109,6 +117,8 @@ class RestaurantDiscoveryScreenTest {
     fun smallScreenWithLargeTextKeepsSheetControlsAndProfilesReachable() {
         screen()
         compose.onNodeWithContentDescription("Expand restaurants").assertIsDisplayed().performClick()
+        state("Half")
+        compose.onNodeWithContentDescription("Expand restaurants").performClick()
         state("Expanded")
         compose.onNodeWithTag("nearby_restaurant_list").performScrollToNode(hasText(anjung.name))
         compose.onAllNodesWithText(anjung.name).filter(hasAnyAncestor(hasTestTag("restaurant_discovery_sheet"))).onFirst().assertIsDisplayed()
