@@ -116,8 +116,8 @@ halal labels come from the existing discovery data rather than the design mockup
 
 The full-screen restaurant profile uses white cards, forest-green actions and mint
 accents. It displays restaurant details, address and distance without GPS coordinates
-or halal status. The current data model has no photo URL, so the hero uses a mint
-dining illustration. Saved restaurants are remembered on this device. Details scroll
+or halal status. Cuisine and rating appear in dedicated cards; unrated restaurants show “Not rated”.
+No restaurant photo or illustration is displayed. Saved restaurants are remembered on this device. Details scroll
 while the walking navigation button stays available at the bottom.
 
 ## Scan checklist
@@ -143,9 +143,11 @@ use `supabase/diagnose_nearby.sql` to compare database and public-role searches.
 On Windows, use `gradlew.bat`. The APK is generated at
 `app/build/outputs/apk/debug/app-debug.apk`.
 
-Version 0.5.2 passes the debug APK build, Android lint, and 64 targeted Supabase,
+Version 0.5.2 passed the debug APK build, Android lint, and 64 targeted Supabase,
 authentication, marker-layout, and screen regression tests. Physical-phone GPS/camera/AR and
 live Supabase availability still require testing.
+Version 0.5.3 additionally passes the debug build, Android lint and all four
+restaurant-profile regression tests for the picture-free cuisine/rating layout.
 
 The native unit suite covers GPS calculations, 1 km filtering, marker projection,
 AR direction math, restaurant metadata, route progress/arrival, and mocked

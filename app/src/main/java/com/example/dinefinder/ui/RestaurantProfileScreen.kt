@@ -15,8 +15,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -58,19 +56,7 @@ internal fun RestaurantProfileScreen(
                 }
                 Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 24.dp),
                     verticalArrangement = Arrangement.spacedBy(18.dp)) {
-                    // The current Supabase model has no photo URL. Never substitute another venue's photograph.
-                    Box(Modifier.fillMaxWidth().height(190.dp).clip(RoundedCornerShape(24.dp))
-                        .background(Brush.linearGradient(listOf(DiscoveryMint, Color(0xFFF0FAF5)))), contentAlignment = Alignment.Center) {
-                        Box(Modifier.align(Alignment.TopEnd).offset(x = 28.dp, y = (-30).dp).size(155.dp)
-                            .background(Color.White.copy(alpha = .45f), CircleShape))
-                        Box(Modifier.align(Alignment.BottomStart).offset(x = (-25).dp, y = 48.dp).size(170.dp)
-                            .background(DiscoveryGreen.copy(alpha = .06f), CircleShape))
-                        Box(Modifier.size(104.dp).background(Color.White.copy(alpha = .85f), CircleShape), contentAlignment = Alignment.Center) {
-                            Icon(Icons.Default.Restaurant, null, Modifier.size(52.dp), tint = DiscoveryGreen)
-                        }
-                    }
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        if (restaurant.cuisine.isNotBlank()) Text(restaurant.cuisine, color = DiscoveryMuted, fontSize = 13.sp, lineHeight = 18.sp)
                         Text(restaurant.name, fontSize = 28.sp, lineHeight = 34.sp, fontWeight = FontWeight.Bold, color = DiscoveryInk)
                         if (restaurant.address.isNotBlank()) Text(restaurant.address, fontSize = 15.sp, lineHeight = 22.sp, color = DiscoveryMuted)
                         distance?.takeIf { it.isFinite() && it >= 0 }?.let {
@@ -80,6 +66,19 @@ internal fun RestaurantProfileScreen(
                                     Icon(Icons.Default.DirectionsWalk, null, Modifier.size(20.dp))
                                     Text("${scanDistance(it)} away", fontSize = 14.sp, fontWeight = FontWeight.Medium)
                                 }
+                            }
+                        }
+                    }
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Box(Modifier.weight(1f)) {
+                            ProfileInfoCard("Cuisine", Icons.Default.Restaurant) {
+                                Text(restaurant.cuisine.ifBlank { "Not provided" }, color = DiscoveryMuted, fontSize = 15.sp, lineHeight = 23.sp)
+                            }
+                        }
+                        Box(Modifier.weight(1f)) {
+                            ProfileInfoCard("Rating", Icons.Default.Star) {
+                                Text(if (restaurant.rating > 0) String.format(java.util.Locale.getDefault(), "%.1f / 5", restaurant.rating) else "Not rated",
+                                    color = DiscoveryGreen, fontSize = 15.sp, lineHeight = 23.sp, fontWeight = FontWeight.Bold)
                             }
                         }
                     }
@@ -124,7 +123,7 @@ private fun ProfileInfoCard(title: String, icon: androidx.compose.ui.graphics.ve
         Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 if (icon != null) Icon(icon, null, tint = DiscoveryGreen, modifier = Modifier.size(22.dp))
-                Text(title, fontSize = 17.sp, lineHeight = 23.sp, fontWeight = FontWeight.Bold)
+                Text(title, modifier = Modifier.weight(1f), fontSize = 17.sp, lineHeight = 23.sp, fontWeight = FontWeight.Bold)
             }
             content()
         }

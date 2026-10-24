@@ -19,15 +19,19 @@ import org.robolectric.annotation.Config
 class RestaurantProfileScreenTest {
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
     private val restaurant = Restaurant("profile-test", "Cafe UMSKAL", "Food court", "Local meals on campus", "UMS Labuan International Campus",
-        GeoPoint(5.280285, 115.176405), 0.0, 1, "", 0L, tags = listOf("HALAL"), isHalal = true)
-    private fun show(busy: Boolean = false, navigate: () -> Unit = {}, close: () -> Unit = {}) {
+        GeoPoint(5.280285, 115.176405), 4.6, 1, "", 0L, tags = listOf("HALAL"), isHalal = true)
+    private fun show(busy: Boolean = false, rating: Double = restaurant.rating, navigate: () -> Unit = {}, close: () -> Unit = {}) {
         compose.activity.getSharedPreferences("dinefinder_saved_restaurants", Context.MODE_PRIVATE).edit().clear().commit()
-        compose.setContent { MaterialTheme { RestaurantProfileScreen(restaurant, 72.0, busy, close, navigate) } }
+        compose.setContent { MaterialTheme { RestaurantProfileScreen(restaurant.copy(rating = rating), 72.0, busy, close, navigate) } }
     }
     @Test fun profileShowsRealDetailsWithoutCoordinatesOrHalalLabels() {
         show()
         compose.onNodeWithText(restaurant.name).assertIsDisplayed()
         compose.onNodeWithText("72 m away").assertIsDisplayed()
+        compose.onNodeWithText("Cuisine").assertIsDisplayed()
+        compose.onNodeWithText("Food court").assertIsDisplayed()
+        compose.onNodeWithText("Rating").assertIsDisplayed()
+        compose.onNodeWithText(String.format(java.util.Locale.getDefault(), "%.1f / 5", 4.6)).assertIsDisplayed()
         compose.onNodeWithText("Halal", substring = true, ignoreCase = true).assertDoesNotExist()
         compose.onNodeWithText("5.280285", substring = true).assertDoesNotExist()
         compose.onNodeWithText("115.176405", substring = true).assertDoesNotExist()
@@ -47,7 +51,8 @@ class RestaurantProfileScreenTest {
         compose.runOnIdle { assertTrue(closed) }
     }
     @Test fun busyRoutePreventsDuplicateNavigationRequests() {
-        show(busy = true)
+        show(busy = true, rating = 0.0)
+        compose.onNodeWithText("Not rated").assertIsDisplayed()
         compose.onNodeWithText("Finding walking route…").assertIsDisplayed().assertIsNotEnabled()
     }
     @Test
