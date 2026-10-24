@@ -8,6 +8,10 @@ import android.provider.Settings
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import com.example.dinefinder.MainActivity
@@ -153,8 +157,8 @@ class SupabaseDiscoveryFlowTest {
             ViewModelProvider(compose.activity)[AppViewModel::class.java]
                 .scanWithPermissions(location = false, camera = false)
         }
-        compose.onNodeWithText("Checks").assertIsDisplayed().performClick()
-        compose.onNodeWithText("Scan checklist").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Scan checklist").assertIsDisplayed().performClick()
+        compose.onNode(hasText("Scan checklist") and hasAnyAncestor(isDialog())).assertIsDisplayed()
         compose.onNodeWithText("Location permission").assertIsDisplayed()
         compose.onNodeWithText("Copy checks").assertIsDisplayed()
     }

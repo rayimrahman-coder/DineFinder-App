@@ -15,6 +15,7 @@ import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.background
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -126,7 +127,7 @@ internal fun SupabaseDiscoveryFlow(model: AppViewModel) {
     BackHandler(enabled = state.scan) {
         if (state.selected != null) model.select(null) else model.closeScan()
     }
-    if (state.scan) Surface(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
+    if (state.scan) Surface(Modifier.fillMaxSize().background(Color.White).windowInsetsPadding(WindowInsets.safeDrawing), color = Color.White) {
         ScanScreen(
             position = state.position, heading = state.heading,
             restaurants = state.restaurants.filter { restaurant ->

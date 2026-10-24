@@ -65,7 +65,7 @@ Choose **Continue as guest**, or register/sign in with Supabase Auth.
 
 1. Tap **Scan for Restaurant**. If access is missing, the **Allow camera & location** explanation appears. **Not now** closes it; **Continue** opens Android runtime permission requests.
 2. Allow precise location and camera access when Android prompts.
-3. Wait for GPS, then view camera markers or the restaurant list.
+3. Wait for GPS, then tap camera markers or drag the bottom restaurant panel up to browse. Drag down to minimise it; the chevron also changes its position.
 4. Tap a restaurant to open its Supabase profile.
 5. Choose **Navigate** for an OpenStreetMap-based walking route and camera arrows.
 
@@ -174,7 +174,7 @@ crossings.
 
 ## Diagnose an empty restaurant search
 
-On the scan screen, tap **Checks → Copy checks**. The checklist automatically
+On the scan screen, tap **shield/checklist icon → Copy checks**. The checklist automatically
 updates permissions, location-service availability, GPS freshness/accuracy,
 internet validation, Supabase configuration, the database request, nearby
 matches, compass and camera-preview streaming. PASS means an observed success;

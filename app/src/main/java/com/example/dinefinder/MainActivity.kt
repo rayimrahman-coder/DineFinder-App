@@ -105,7 +105,7 @@ class MainActivity : ComponentActivity() {
             var darkMode by remember { mutableStateOf(preferences.isDarkMode()) }
             var apiKey by remember { mutableStateOf(apiKeyStore.apiKey()) }
             SideEffect {
-                val barStyle = if (darkMode) SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
+                val barStyle = if (darkMode && !appViewModel.state.scan) SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
                 else SystemBarStyle.light(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT)
                 enableEdgeToEdge(statusBarStyle = barStyle, navigationBarStyle = barStyle)
             }

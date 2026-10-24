@@ -3,6 +3,7 @@ package com.example.dinefinder.ui
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
 import com.example.dinefinder.core.GeoPoint
 import org.junit.Rule
@@ -29,8 +30,8 @@ class SearchFailureScreenTest {
             )
         }
         compose.onNodeWithText("No restaurants found within 1 km").assertDoesNotExist()
-        compose.onNodeWithText("Search failed · View details").assertIsDisplayed()
-        compose.onNodeWithText("List").performClick()
+        compose.onNodeWithText("Search unavailable").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Expand restaurants").performClick()
         compose.onNodeWithText("Unable to connect to Supabase.").assertIsDisplayed()
         compose.onNodeWithText("No restaurants recorded within 1 km").assertDoesNotExist()
     }

@@ -98,9 +98,21 @@ The card scrolls on short screens and respects system text scaling. Its opening
 animation uses Compose's system animation clock. No image assets, new UI
 packages, Flutter project, or backend changes were introduced.
 
+## AR discovery screen
+
+The camera screen uses the permission dialog's white, forest-green and mint
+palette, with a compact header and no Camera/List tabs. Full-name restaurant
+markers follow compass bearings and stay above the restaurant panel.
+
+Drag the bottom panel between collapsed, half-open and expanded positions, or
+use its chevron and accessibility actions. Expand it to browse and scroll nearby
+restaurants; tap a marker or row to open the existing profile and navigation.
+The camera stays mounted while the panel moves. Counts, names, distances and
+halal labels come from the existing discovery data rather than the design mockup.
+
 ## Scan checklist
 
-In Scan mode, tap **Checks** for 12 automatic checks covering permissions,
+In Scan mode, tap the **shield/checklist icon** for 12 automatic checks covering permissions,
 location services, GPS freshness/accuracy, internet, Supabase configuration and
 search, nearby results, compass and camera preview. PASS, WAIT, FAIL and CHECK
 statuses explain what was actually observed. A successful search with zero
@@ -121,8 +133,8 @@ use `supabase/diagnose_nearby.sql` to compare database and public-role searches.
 On Windows, use `gradlew.bat`. The APK is generated at
 `app/build/outputs/apk/debug/app-debug.apk`.
 
-Version 0.4.4 passes the debug APK build, Android lint, and 49 targeted Supabase,
-authentication, and screen regression tests. Physical-phone GPS/camera/AR and
+Version 0.5.0 passes the debug APK build, Android lint, and 60 targeted Supabase,
+authentication, marker-layout, and screen regression tests. Physical-phone GPS/camera/AR and
 live Supabase availability still require testing.
 
 The native unit suite covers GPS calculations, 1 km filtering, marker projection,
