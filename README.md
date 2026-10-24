@@ -112,6 +112,14 @@ restaurants; tap a marker or row to open the existing profile and navigation.
 The camera stays mounted while the panel moves. Counts, names, distances and
 halal labels come from the existing discovery data rather than the design mockup.
 
+## Restaurant profile
+
+The full-screen restaurant profile uses white cards, forest-green actions and mint
+accents. It displays restaurant details, address and distance without GPS coordinates
+or halal status. The current data model has no photo URL, so the hero uses a mint
+dining illustration. Saved restaurants are remembered on this device. Details scroll
+while the walking navigation button stays available at the bottom.
+
 ## Scan checklist
 
 In Scan mode, tap the **shield/checklist icon** for 12 automatic checks covering permissions,
@@ -135,7 +143,7 @@ use `supabase/diagnose_nearby.sql` to compare database and public-role searches.
 On Windows, use `gradlew.bat`. The APK is generated at
 `app/build/outputs/apk/debug/app-debug.apk`.
 
-Version 0.5.1 passes the debug APK build, Android lint, and 60 targeted Supabase,
+Version 0.5.2 passes the debug APK build, Android lint, and 64 targeted Supabase,
 authentication, marker-layout, and screen regression tests. Physical-phone GPS/camera/AR and
 live Supabase availability still require testing.
 

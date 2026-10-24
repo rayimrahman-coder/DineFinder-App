@@ -40,6 +40,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.dinefinder.core.Restaurant
 import com.example.dinefinder.core.distanceMeters
+import com.example.dinefinder.ui.RestaurantProfileScreen
 import com.example.dinefinder.ui.ScanScreen
 import com.example.dinefinder.ui.CameraLocationPermissionDialog
 import java.util.Locale
@@ -229,33 +230,8 @@ internal fun SupabaseDiscoveryFlow(model: AppViewModel) {
         confirmButton = { TextButton(onClick = model::dismissError) { Text("OK") } },
     )
     state.selected?.let { restaurant ->
-        SupabaseRestaurantProfile(restaurant, state.position?.let { distanceMeters(it, restaurant.location) },
+        RestaurantProfileScreen(restaurant, state.position?.let { distanceMeters(it, restaurant.location) },
             state.routing, { model.select(null) }, { model.navigate(restaurant) })
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun SupabaseRestaurantProfile(restaurant: Restaurant, distance: Double?, busy: Boolean, onClose: () -> Unit, onNavigate: () -> Unit) {
-    ModalBottomSheet(onDismissRequest = onClose, containerColor = Color.White) {
-        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp).padding(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("${restaurant.emoji} ${restaurant.name}", style = MaterialTheme.typography.headlineSmall)
-            val rating = if (restaurant.rating > 0) String.format(Locale.getDefault(), "★ %.1f", restaurant.rating) else "Not rated"
-            Text("Rating: $rating")
-            Text("Cuisine type: ${restaurant.cuisine}")
-            Text("Halal status: ${restaurant.halalStatus}")
-            Text("Price range: Not provided")
-            Text("Operating hours: ${restaurant.openingHours}")
-            Text("Address: ${restaurant.address.ifBlank { "Not provided" }}")
-            distance?.let { Text("${it.toInt()} m from your location", color = MaterialTheme.colorScheme.primary) }
-            if (restaurant.description.isNotBlank()) Text(restaurant.description)
-            if (restaurant.tags.isNotEmpty()) Text(restaurant.tags.joinToString(" · "))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Button(enabled = !busy, onClick = onNavigate, modifier = Modifier.weight(1f)) { Text("Navigate") }
-                OutlinedButton(onClick = onClose, modifier = Modifier.weight(1f)) { Text("CANCEL") }
-            }
-        }
     }
 }
 
