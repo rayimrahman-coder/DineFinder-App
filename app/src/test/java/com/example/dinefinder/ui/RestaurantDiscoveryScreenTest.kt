@@ -109,7 +109,7 @@ class RestaurantDiscoveryScreenTest {
         screen(route=DemoData.route(origin,anjung.location))
         compose.onNodeWithText("Walking navigation").assertIsDisplayed()
         compose.onNodeWithTag("restaurant_discovery_sheet").assertDoesNotExist()
-        compose.onNodeWithText("Directions").performClick()
+        compose.onNodeWithText("Directions").performScrollTo().performClick()
         compose.onNodeWithText("Walking directions").assertIsDisplayed()
     }
     @Test

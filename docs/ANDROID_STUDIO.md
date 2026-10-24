@@ -221,3 +221,22 @@ The arrival screen checks proximity to the restaurant coordinates, not just the
 routing service's snapped path endpoint. GPS proximity is approximate and does
 not verify an exact entrance. New AR rendering and installation behavior require
 validation on a compatible physical phone.
+
+
+## Test voice guidance and camera-free navigation (0.6.0)
+
+1. Pull the latest GitHub code, sync Gradle and run the app on your phone.
+2. Turn on location, scan, select a restaurant, and tap **Start walking navigation**.
+3. Raise the phone's **media volume**. The current walking instruction should be spoken.
+4. Tap **Turn camera off**. GPS, written instructions and voice continue without the camera.
+5. Test **Mute voice**, **Enable voice** and **Repeat instruction**. An unchanged instruction
+   should not be spoken repeatedly when you simply rotate the phone.
+6. Tap **Turn camera on** to return to the camera view with the same route.
+7. If speech is unavailable, tap **Open speech settings** and install/select an English
+   voice. End and restart navigation after changing the engine or voice data.
+8. Keep DineFinder open with the screen on. Speech and GPS navigation pause when it
+   leaves the foreground; background/lock-screen navigation is not implemented.
+9. End navigation and verify that speech stops and camera usage ends.
+
+Physical phone checks are needed for speaker volume, installed voice engines,
+GPS accuracy and CameraX/ARCore switching; automated tests use simulated speech and GPS.

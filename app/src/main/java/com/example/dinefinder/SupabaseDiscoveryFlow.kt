@@ -143,6 +143,7 @@ internal fun SupabaseDiscoveryFlow(model: AppViewModel) {
             demoProgress = state.demoProgress,
             onShowSearchDetails = { showSearchDetails = true },
             searchCompleted = state.lastSearchCount != null,
+            navigationUpdating = state.routing,
             onCameraCheckChange = { ready, error, active ->
                 cameraReady = ready; cameraError = error; cameraActive = active
             },

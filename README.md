@@ -120,6 +120,28 @@ or halal status. Cuisine and rating appear in dedicated cards; unrated restauran
 No restaurant photo or illustration is displayed. Saved restaurants are remembered on this device. Details scroll
 while the walking navigation button stays available at the bottom.
 
+## Voice and camera-free walking navigation
+
+After selecting **Start walking navigation**, use **Turn camera off** to switch
+from AR to a white-and-mint GPS instruction view. **Turn camera on** restores the
+camera without calculating a different route. Camera-free navigation also works
+when camera permission is denied; GPS access is still required.
+
+Voice guidance starts with the walking route. Use **Mute voice**, **Enable voice**
+and **Repeat instruction** to control it. Android Text-to-Speech reads the current
+route maneuver, warns when off route or GPS is unavailable, and announces arrival.
+Repeated GPS/compass updates do not repeat an unchanged instruction. Speech pauses
+while recalculating and stops when muted, navigation ends or the app leaves the
+foreground. Keep DineFinder open and the screen on; background and lock-screen
+navigation are not implemented.
+
+No Google API key is required. The phone needs an installed Text-to-Speech engine
+and English voice data; the navigation screen links to speech settings if voice
+is unavailable. Adjust Android media volume to hear directions. Download an English
+voice for offline speech; fetching a walking route still requires internet access.
+Restaurant data remains in Supabase and routes still use the existing key-free
+OpenStreetMap-based pedestrian service.
+
 ## Scan checklist
 
 In Scan mode, tap the **shield/checklist icon** for 12 automatic checks covering permissions,
@@ -143,11 +165,10 @@ use `supabase/diagnose_nearby.sql` to compare database and public-role searches.
 On Windows, use `gradlew.bat`. The APK is generated at
 `app/build/outputs/apk/debug/app-debug.apk`.
 
-Version 0.5.2 passed the debug APK build, Android lint, and 64 targeted Supabase,
-authentication, marker-layout, and screen regression tests. Physical-phone GPS/camera/AR and
-live Supabase availability still require testing.
-Version 0.5.3 additionally passes the debug build, Android lint and all four
-restaurant-profile regression tests for the picture-free cuisine/rating layout.
+Version 0.6.0 passes the debug APK build, Android lint and 100 targeted tests
+covering Supabase/authentication, route calculations, speech lifecycle, camera-mode
+switching, profiles and screen regressions. Physical-phone GPS/camera/AR, installed
+speech engines and live provider availability still require phone testing.
 
 The native unit suite covers GPS calculations, 1 km filtering, marker projection,
 AR direction math, restaurant metadata, route progress/arrival, and mocked

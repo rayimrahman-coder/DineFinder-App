@@ -48,6 +48,6 @@ internal fun scanChecklist(
         ScanCheck("Camera permission", if (state.cameraAllowed) CheckStatus.PASS else CheckStatus.FAIL,
             if (state.cameraAllowed) "Camera permission allowed" else "Allow camera access; the restaurant list still works"),
         ScanCheck("Camera preview", when { cameraError != null -> CheckStatus.FAIL; !state.cameraAllowed -> CheckStatus.FAIL; !cameraActive -> CheckStatus.WAIT; cameraReady -> CheckStatus.PASS; else -> CheckStatus.WAIT },
-            when { cameraError != null -> cameraError; !state.cameraAllowed -> "Camera permission needed"; !cameraActive -> "Not checked while list or 3D navigation is active"; cameraReady -> "CameraX is delivering preview frames"; else -> "Waiting for live camera frames" }),
+            when { cameraError != null -> cameraError; !state.cameraAllowed -> "Camera permission needed"; !cameraActive -> "Preview inactive while camera-free or local 3D navigation is active"; cameraReady -> "CameraX is delivering preview frames"; else -> "Waiting for live camera frames" }),
     )
 }

@@ -31,6 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.dinefinder.core.*
+import com.example.dinefinder.device.rememberNavigationVoice
 import com.example.dinefinder.device.CameraPreview
 import com.example.dinefinder.ar.ArNavigationPreview
 import java.util.Locale
@@ -61,6 +62,7 @@ fun ScanScreen(
     onShowSearchDetails: () -> Unit = {},
     searchCompleted: Boolean = true,
     onCameraCheckChange: (Boolean, String?, Boolean) -> Unit = { _, _, _ -> },
+    navigationUpdating: Boolean = false,
 ) {
     var focusedId by rememberSaveable { mutableStateOf<String?>(null) }
     val orderedRestaurants = remember(restaurants, position) {
@@ -74,7 +76,10 @@ fun ScanScreen(
     var arStatus by remember(route) { mutableStateOf<String?>(null) }
     var arEnabled by remember(route) { mutableStateOf(!isDemo && route != null) }
     var cameraAttempt by remember { mutableIntStateOf(0) }
-    val cameraActive = !(arEnabled && route != null)
+    var navigationCamera by rememberSaveable { mutableStateOf(cameraAllowed || isDemo) }
+    var voiceEnabled by rememberSaveable { mutableStateOf(true) }
+    val cameraShown = route == null || navigationCamera
+    val cameraActive = cameraShown && !(arEnabled && route != null)
     LaunchedEffect(cameraReady, cameraError, cameraActive) {
         onCameraCheckChange(cameraReady, cameraError, cameraActive)
     }
@@ -83,7 +88,9 @@ fun ScanScreen(
     val pathEndsNearby = position != null && route != null && progress?.hasArrived == false && nearestRouteProgress(position, route).hasArrived
     LaunchedEffect(progress?.hasArrived) { if (progress?.hasArrived == true) directionsVisible = false }
     val retry = { cameraAttempt++; cameraError = null; onRetry() }
-    val problems = listOfNotNull(error, locationError, headingError, cameraError).distinct()
+    val problems = listOfNotNull(error, locationError, headingError.takeIf { cameraShown }, cameraError.takeIf { cameraShown }).distinct()
+    val voice = rememberNavigationVoice(route, voiceEnabled,
+        navigationVoiceCue(progress, locationError, destination?.name), paused = navigationUpdating)
 
     Column(Modifier.fillMaxSize().background(Color.White)) {
         DiscoveryHeader(if (route == null) "Discover nearby" else "Walking navigation",
@@ -117,7 +124,7 @@ fun ScanScreen(
             BackHandler(enabled = route == null && sheet.currentValue == DiscoverySheetPosition.Expanded) {
                 scope.launch { sheet.animateTo(DiscoverySheetPosition.Half, tween(240)) }
             }
-            ScanCameraScene(position, validHeading, orderedRestaurants, route, progress, isDemo, busy,
+            if (cameraShown) ScanCameraScene(position, validHeading, orderedRestaurants, route, progress, isDemo, busy,
                 cameraAllowed, cameraAttempt, { cameraError = it }, { cameraReady = it }, selectRestaurant,
                 arEnabled, pathEndsNearby, error, searchCompleted, { arStatus = it },
                 { arEnabled = false; arStatus = "Local 3D AR is unavailable. Using the camera compass view." },
@@ -127,39 +134,19 @@ fun ScanScreen(
                     cameraHeight >= maxHeight - collapsedHeight - 2.dp,
                     orderedRestaurants, position, busy, searchCompleted, problems, error != null,
                     selectRestaurant, retry, onShowSearchDetails)
-            } else Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    if (route != null) Surface(color = Color.Black.copy(alpha = .75f), shape = RoundedCornerShape(16.dp)) {
-                        Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(progress?.instruction?.text ?: "Waiting for your location", color = Color.White, fontWeight = FontWeight.SemiBold)
-                            if (progress?.isOffRoute == true) {
-                                Text("Off route · recalculate before continuing", color = Color(0xFFFFD58B))
-                                Button(onClick = onRecalculate, enabled = !busy) { Text("Recalculate") }
-                            }
-                            if (!isDemo) {
-                                Text(arStatus ?: "GPS + compass guidance", color = Color.White.copy(alpha = .8f), fontSize = 11.sp)
-                                TextButton(onClick = { arEnabled = !arEnabled; arStatus = null }) {
-                                    Text(if (arEnabled) "Use compass camera" else "Try local 3D AR", color = Color(0xFF7CF4B2))
-                                }
-                            }
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                OutlinedButton(onClick = { directionsVisible = true }, Modifier.weight(1f)) { Text("Directions", color = Color.White) }
-                                OutlinedButton(onClick = onClose, Modifier.weight(1f)) { Text("End", color = Color.White) }
-                            }
+            } else {
+                WalkingNavigationPanel(navigationCamera, { navigationCamera = !navigationCamera; cameraError = null; cameraReady = false },
+                    voiceEnabled, { voiceEnabled = !voiceEnabled }, voice, progress, busy, locationError,
+                    arEnabled, arStatus, { arEnabled = !arEnabled; arStatus = null }, isDemo,
+                    onRecalculate, { directionsVisible = true }, onClose, problems, retry) {
+                    if (isDemo) Surface(color = Color(0xFFFBECCF), shape = RoundedCornerShape(14.dp)) {
+                        Column(Modifier.padding(12.dp)) {
+                            Text("SIMULATION · fictional route", fontSize = 11.sp)
+                            Slider(value = (validHeading ?: 0.0).toFloat(), onValueChange = { onHeadingChange(it.toDouble()) }, valueRange = 0f..359f,
+                                modifier = Modifier.semantics { contentDescription = "Demo compass heading" })
+                            Slider(value = demoProgress.toFloat(), onValueChange = { onWalkChange(it.toDouble()) },
+                                modifier = Modifier.semantics { contentDescription = "Demo walking progress" })
                         }
-                    }
-                if (problems.isNotEmpty()) Surface(color = Color(0xFFFBECCF), shape = RoundedCornerShape(14.dp)) {
-                    Column(Modifier.padding(10.dp)) {
-                        Text(problems.joinToString("\n"), color = Color(0xFF77552D), fontSize = 12.sp)
-                        TextButton(onClick = retry, enabled = !busy) { Text("Retry sensors and search") }
-                    }
-                }
-                if (isDemo) Surface(color = Color(0xFFFBECCF), shape = RoundedCornerShape(14.dp)) {
-                    Column(Modifier.padding(12.dp)) {
-                        Text("SIMULATION · fictional route", fontSize = 11.sp)
-                        Slider(value = (validHeading ?: 0.0).toFloat(), onValueChange = { onHeadingChange(it.toDouble()) }, valueRange = 0f..359f,
-                            modifier = Modifier.semantics { contentDescription = "Demo compass heading" })
-                        Slider(value = demoProgress.toFloat(), onValueChange = { onWalkChange(it.toDouble()) },
-                            modifier = Modifier.semantics { contentDescription = "Demo walking progress" })
                     }
                 }
             }
