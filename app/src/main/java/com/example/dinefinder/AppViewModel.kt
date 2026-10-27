@@ -38,6 +38,9 @@ internal data class AppState(
     val lastSearchCenter: GeoPoint? = null,
     val lastSearchCount: Int? = null,
     val selected: CoreRestaurant? = null,
+    val profileDetails: RestaurantProfileDetails? = null,
+    val profileLoading: Boolean = false,
+    val profileError: String? = null,
     val destination: CoreRestaurant? = null,
     val route: RoutePlan? = null,
     val demoHeading: Double = 35.0,
@@ -60,6 +63,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     private var foreground = false
     private var queryJob: Job? = null
     private var routeJob: Job? = null
+    private var profileJob: Job? = null
     private var authJob: Job? = null
     private var lastQuery: GeoPoint? = null
     private var lastQueryAt = 0L
@@ -94,7 +98,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     internal fun logout() {
         val account = state.account
         generation++
-        queryJob?.cancel(); routeJob?.cancel(); authJob?.cancel()
+        queryJob?.cancel(); routeJob?.cancel(); profileJob?.cancel(); authJob?.cancel()
         lastQuery = null
         state = AppState(demo = false)
         device.stop()
@@ -151,10 +155,11 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     }
     internal fun closeScan() {
         generation++
-        queryJob?.cancel(); routeJob?.cancel()
+        queryJob?.cancel(); routeJob?.cancel(); profileJob?.cancel()
         lastQuery = null
         state = state.copy(scan = false, profile = false, consent = false,
             loading = false, routing = false, restaurants = emptyList(), selected = null,
+            profileDetails = null, profileLoading = false, profileError = null,
             route = null, destination = null, demoProgress = 0.0, error = null,
             sensors = SensorSnapshot(), lastSearchCenter = null, lastSearchCount = null)
         device.stop()
@@ -216,7 +221,24 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    internal fun select(restaurant: CoreRestaurant?) { state = state.copy(selected = restaurant) }
+    internal fun select(restaurant: CoreRestaurant?) {
+        profileJob?.cancel()
+        state = state.copy(selected = restaurant, profileDetails = null,
+            profileLoading = restaurant != null, profileError = null)
+        if (restaurant == null) return
+        profileJob = viewModelScope.launch {
+            try {
+                val details = api.profileDetails(restaurant.id)
+                if (state.selected?.id == restaurant.id)
+                    state = state.copy(profileDetails = details, profileLoading = false)
+            } catch (cancelled: CancellationException) { throw cancelled
+            } catch (_: Exception) {
+                if (state.selected?.id == restaurant.id) state = state.copy(profileLoading = false,
+                    profileError = "Photos and reviews couldn't be loaded. Please try again.")
+            }
+        }
+    }
+    internal fun retryProfile() { state.selected?.let(::select) }
     internal fun navigate(restaurant: CoreRestaurant) {
         if (state.routing) return
         val origin = state.position ?: return
@@ -227,7 +249,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         }
         val current = generation
         val demo = state.demo
-        state = state.copy(selected = null, routing = true, error = null)
+        profileJob?.cancel()
+        state = state.copy(selected = null, profileDetails = null, profileLoading = false, profileError = null, routing = true, error = null)
         routeJob?.cancel()
         routeJob = viewModelScope.launch {
             try {

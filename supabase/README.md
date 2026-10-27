@@ -145,3 +145,11 @@ Use [the full profile import guide](IMPORT_RESTAURANT_PROFILES.md) and
 [the smaller SQL Editor files](imports/restaurant_profile_batches/README.md). Only the
 328 selected operational food outlets are imported; each retains all 65 source
 fields. Existing restaurant coordinates and known profile values are preserved.
+
+
+## Profile photos and reviews
+
+For Android 0.6.1, follow [photo/review setup](PROFILE_PHOTOS_REVIEWS.md) and run
+[migration 202610280001](migrations/202610280001_profile_photos_reviews.sql).
+It exposes a narrow public profile-details endpoint while leaving raw source
+profiles and unpublished written reviews private.

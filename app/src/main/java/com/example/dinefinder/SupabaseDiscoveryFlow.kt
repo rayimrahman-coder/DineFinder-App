@@ -232,7 +232,9 @@ internal fun SupabaseDiscoveryFlow(model: AppViewModel) {
     )
     state.selected?.let { restaurant ->
         RestaurantProfileScreen(restaurant, state.position?.let { distanceMeters(it, restaurant.location) },
-            state.routing, { model.select(null) }, { model.navigate(restaurant) })
+            state.routing, { model.select(null) }, { model.navigate(restaurant) },
+            details = state.profileDetails, detailsLoading = state.profileLoading,
+            detailsError = state.profileError, onRetryDetails = model::retryProfile)
     }
 }
 

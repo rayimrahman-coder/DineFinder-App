@@ -238,6 +238,46 @@ class DineFinderApiTest {
         assertEquals(publicKey, request.getHeader("apikey"))
     }
 
+    @Test fun profileMediaUsesSupabasePublicRpcAndParsesRealReviewFields() = runBlocking {
+        server.enqueue(json("""{"photo_url":"https://images.example.test/cafe.jpg","review_count":67,
+          "score_counts":{"5":42,"4":20,"3":5,"2":0,"1":0},
+          "reviews":[{"id":"review-1","author":"Test diner","rating":5,"text":"Fresh lunch and friendly service."}]}"""))
+        val details = api.profileDetails("10000000-0000-4000-8000-000000000001")
+        val request = server.takeRequest()
+        assertEquals("/rest/v1/rpc/restaurant_profile_details", request.path)
+        assertEquals(publicKey, request.getHeader("apikey"))
+        assertNull(request.getHeader("Authorization"))
+        assertEquals("10000000-0000-4000-8000-000000000001", JSONObject(request.body.readUtf8()).getString("restaurant_id"))
+        assertEquals("https://images.example.test/cafe.jpg", details.photoUrl)
+        assertEquals(67, details.reviewCount)
+        assertEquals(42, details.scoreCounts[5])
+        assertEquals("Fresh lunch and friendly service.", details.reviews.single().text)
+    }
+    @Test fun profileMediaDropsUnsafePhotoLinksAndDoesNotInventMissingReviews() = runBlocking {
+        for (url in listOf("http://images.example.test/a.jpg", "javascript:alert(1)", "https://user:password@images.example.test/a.jpg")) {
+            server.enqueue(json(JSONObject().put("photo_url", url).toString()))
+            val details = api.profileDetails("cafe")
+            assertNull(details.photoUrl); assertNull(details.reviewCount)
+            assertTrue(details.reviews.isEmpty()); assertTrue(details.scoreCounts.isEmpty())
+        }
+    }
+    @Test fun profileMediaErrorsDoNotExposeServerDetails() = runBlocking {
+        server.enqueue(json("""{"code":"PGRST202","message":"private SQL data"}""", 404))
+        val error = expectApiError { api.profileDetails("cafe") }
+        assertEquals("Photos and reviews couldn't be loaded. Please try again.", error.message)
+    }
+    @Test fun profileMediaRejectsInvalidCountsAndReviewRatings() = runBlocking<Unit> {
+        server.enqueue(json("""{"review_count":-1}"""))
+        expectApiError { api.profileDetails("cafe") }
+        server.enqueue(json("""{"reviews":[{"id":"bad","text":"A real review","rating":6}]}"""))
+        expectApiError { api.profileDetails("cafe") }
+    }
+    @Test fun profileNotFoundIsAnEmptyOptionalResult() = runBlocking {
+        server.enqueue(json("null"))
+        val details = api.profileDetails("not-found")
+        assertNull(details.photoUrl); assertTrue(details.reviews.isEmpty())
+    }
+
     private suspend fun expectApiError(block: suspend () -> Any?): ApiException {
         try { block() } catch (error: ApiException) { return error }
         throw AssertionError("Expected an ApiException")

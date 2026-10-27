@@ -19,6 +19,8 @@ import okhttp3.Response
 import okio.ByteString.Companion.decodeBase64
 import com.example.dinefinder.core.GeoPoint
 import com.example.dinefinder.core.Restaurant
+import com.example.dinefinder.core.RestaurantProfileDetails
+import com.example.dinefinder.core.RestaurantReview
 import com.example.dinefinder.core.RouteInstruction
 import com.example.dinefinder.core.RoutePlan
 import com.example.dinefinder.core.distanceMeters
@@ -101,6 +103,41 @@ class DineFinderApi(
             (0 until rows.length()).map { restaurant(rows.getJSONObject(it)) }
                 .filter { distanceMeters(center, it.location) <= 1000.5 }
                 .sortedBy { distanceMeters(center, it.location) }
+        }
+    }
+
+    suspend fun profileDetails(restaurantId: String): RestaurantProfileDetails = withContext(Dispatchers.IO) {
+        if (restaurantId.isBlank() || restaurantId.length > 128) throw ApiException("Choose a restaurant to view its profile.")
+        val body = JSONObject().put("restaurant_id", restaurantId)
+        val response = execute(publicRequest("rest/v1/rpc/restaurant_profile_details")
+            .post(body.toString().toRequestBody(JSON_MEDIA_TYPE)).build())
+        if (response.status !in 200..299) throw ApiException("Photos and reviews couldn't be loaded. Please try again.")
+        parseSafely("Photos and reviews couldn't be read. Please try again.") {
+            if (response.body.trim() == "null") return@parseSafely RestaurantProfileDetails()
+            val data = JSONObject(response.body)
+            fun count(value: Any?): Int? {
+                if (value == null || value == JSONObject.NULL) return null
+                val number = (value as? Number)?.toDouble()
+                    ?: throw ApiException("The review information is invalid.")
+                if (!number.isFinite() || number !in 0.0..1_000_000_000.0 || number % 1.0 != 0.0)
+                    throw ApiException("The review information is invalid.")
+                return number.toInt()
+            }
+            val scores = data.optJSONObject("score_counts")
+            val breakdown = (1..5).mapNotNull { stars -> count(scores?.opt(stars.toString()))?.let { stars to it } }.toMap()
+            val rows = data.optJSONArray("reviews") ?: JSONArray()
+            if (rows.length() > 10) throw ApiException("The review response is too large.")
+            val reviews = (0 until rows.length()).map { index ->
+                val row = rows.getJSONObject(index)
+                val rating = count(row.opt("rating"))
+                if (rating != null && rating !in 1..5) throw ApiException("The review rating is invalid.")
+                val text = nonempty(row, "text")
+                if (text.length > 5000) throw ApiException("The review response is too large.")
+                RestaurantReview(nonempty(row, "id"), string(row, "author") ?: "Diner", rating, text)
+            }
+            val photo = string(data, "photo_url")?.takeIf { it.length <= 4096 }?.toHttpUrlOrNull()
+                ?.takeIf { it.isHttps && it.username.isEmpty() && it.password.isEmpty() }
+            RestaurantProfileDetails(photo?.toString(), count(data.opt("review_count")), breakdown, reviews)
         }
     }
 

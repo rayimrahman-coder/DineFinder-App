@@ -240,3 +240,13 @@ validation on a compatible physical phone.
 
 Physical phone checks are needed for speaker volume, installed voice engines,
 GPS accuracy and CameraX/ARCore switching; automated tests use simulated speech and GPS.
+
+
+## Enable restaurant photos and reviews (0.6.1)
+
+Run `supabase/migrations/202610280001_profile_photos_reviews.sql` once in Supabase
+SQL Editor after importing the full source profiles. Pull, sync and run the new
+Android version. Open a restaurant to load its photo and review summary. Written
+reviews appear only when actual published entries exist in `restaurant_reviews`;
+the original workbook includes aggregates but no individual review comments.
+See [the setup guide](../supabase/PROFILE_PHOTOS_REVIEWS.md).

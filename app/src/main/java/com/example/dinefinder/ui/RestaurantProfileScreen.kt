@@ -23,6 +23,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import coil.ImageLoader
+import coil.imageLoader
+import com.example.dinefinder.core.RestaurantProfileDetails
 import com.example.dinefinder.core.Restaurant
 
 /** Restaurant information stays separate from the GPS coordinates used for routing. */
@@ -33,6 +36,11 @@ internal fun RestaurantProfileScreen(
     busy: Boolean,
     onClose: () -> Unit,
     onNavigate: () -> Unit,
+    details: RestaurantProfileDetails? = null,
+    detailsLoading: Boolean = false,
+    detailsError: String? = null,
+    onRetryDetails: () -> Unit = {},
+    imageLoader: ImageLoader? = null,
 ) {
     val context = LocalContext.current
     val preferences = remember(context) { context.getSharedPreferences("dinefinder_saved_restaurants", Context.MODE_PRIVATE) }
@@ -56,6 +64,18 @@ internal fun RestaurantProfileScreen(
                 }
                 Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 24.dp),
                     verticalArrangement = Arrangement.spacedBy(18.dp)) {
+                    if (detailsLoading) {
+                        LinearProgressIndicator(Modifier.fillMaxWidth(), color = DiscoveryGreen)
+                        Text("Loading photos and reviews…", color = DiscoveryMuted, fontSize = 14.sp)
+                    } else if (detailsError != null) {
+                        Surface(color = DiscoveryMint.copy(alpha = .35f), shape = RoundedCornerShape(16.dp)) {
+                            Column(Modifier.padding(16.dp)) {
+                                Text(detailsError, color = DiscoveryMuted, fontSize = 14.sp, lineHeight = 21.sp)
+                                TextButton(onClick = onRetryDetails) { Text("Retry photos and reviews", color = DiscoveryGreen) }
+                            }
+                        }
+                    }
+                    if (details != null) RestaurantProfilePhoto(restaurant.name, details.photoUrl, imageLoader ?: context.imageLoader)
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(restaurant.name, fontSize = 28.sp, lineHeight = 34.sp, fontWeight = FontWeight.Bold, color = DiscoveryInk)
                         if (restaurant.address.isNotBlank()) Text(restaurant.address, fontSize = 15.sp, lineHeight = 22.sp, color = DiscoveryMuted)
@@ -82,6 +102,7 @@ internal fun RestaurantProfileScreen(
                             }
                         }
                     }
+                    if (!detailsLoading && detailsError == null) RestaurantReviewSection(details)
                     if (restaurant.description.isNotBlank()) ProfileInfoCard("About this place") {
                         Text(restaurant.description, color = DiscoveryMuted, fontSize = 15.sp, lineHeight = 23.sp)
                     }
@@ -118,7 +139,7 @@ internal fun RestaurantProfileScreen(
 }
 
 @Composable
-private fun ProfileInfoCard(title: String, icon: androidx.compose.ui.graphics.vector.ImageVector? = null, content: @Composable () -> Unit) {
+internal fun ProfileInfoCard(title: String, icon: androidx.compose.ui.graphics.vector.ImageVector? = null, content: @Composable () -> Unit) {
     Surface(shape = RoundedCornerShape(20.dp), color = Color.White, contentColor = DiscoveryInk, border = BorderStroke(1.dp, DiscoveryBorder)) {
         Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
