@@ -13,6 +13,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -42,10 +43,18 @@ internal fun RestaurantProfileScreen(
     onRetryDetails: () -> Unit = {},
     imageLoader: ImageLoader? = null,
 ) {
+    var reviewLink by rememberSaveable(restaurant.id) { mutableStateOf<String?>(null) }
+    val reviewBrowser = remember(restaurant.id) { ReviewBrowserController() }
     val context = LocalContext.current
     val preferences = remember(context) { context.getSharedPreferences("dinefinder_saved_restaurants", Context.MODE_PRIVATE) }
     var saved by remember(restaurant.id) { mutableStateOf(preferences.getBoolean(restaurant.id, false)) }
-    Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+    Dialog(onDismissRequest = {
+        if (reviewLink != null) reviewBrowser.back { reviewLink = null } else onClose()
+    }, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        reviewLink?.let { link ->
+            RestaurantReviewBrowser(restaurant.name, link, reviewBrowser) { reviewLink = null }
+            return@Dialog
+        }
         Surface(Modifier.fillMaxSize().testTag("restaurant_profile"), color = Color.White, contentColor = DiscoveryInk) {
             Column(Modifier.fillMaxSize().safeDrawingPadding()) {
                 Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
@@ -102,7 +111,7 @@ internal fun RestaurantProfileScreen(
                             }
                         }
                     }
-                    if (!detailsLoading && detailsError == null) RestaurantReviewSection(details)
+                    if (!detailsLoading && detailsError == null) RestaurantReviewSection(details) { reviewLink = it }
                     if (restaurant.description.isNotBlank()) ProfileInfoCard("About this place") {
                         Text(restaurant.description, color = DiscoveryMuted, fontSize = 15.sp, lineHeight = 23.sp)
                     }

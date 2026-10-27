@@ -158,3 +158,8 @@ profiles and unpublished written reviews private.
 For Android 0.6.2, use [migration 202610280002](migrations/202610280002_profile_review_links.sql)
 to return the stored `location_reviews_link`. The Reviews button opens this link
 in Maps or a browser. See [the updated guide](PROFILE_PHOTOS_REVIEWS.md).
+
+
+Android 0.6.3 displays this same `location_reviews_link` inside DineFinder's
+review viewer instead of launching Maps or a browser. No further SQL change is
+required after migration 202610280002.

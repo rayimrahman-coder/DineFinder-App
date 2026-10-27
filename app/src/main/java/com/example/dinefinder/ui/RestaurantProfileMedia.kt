@@ -4,7 +4,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.OpenInNew
+import androidx.compose.material.icons.filled.RateReview
 import androidx.compose.material.icons.filled.Photo
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
@@ -14,7 +14,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -60,10 +59,8 @@ internal fun RestaurantProfilePhoto(name: String, url: String?, imageLoader: Ima
 }
 
 @Composable
-internal fun RestaurantReviewSection(details: RestaurantProfileDetails?) {
-    val uriHandler = LocalUriHandler.current
+internal fun RestaurantReviewSection(details: RestaurantProfileDetails?, onReadReviews: (String) -> Unit) {
     val link = details?.locationReviewsLink
-    var openFailed by remember(link) { mutableStateOf(false) }
     ProfileInfoCard("Reviews", Icons.Default.Star) {
         Text(when (val count = details?.reviewCount) {
             null -> "Review count not available"
@@ -87,16 +84,12 @@ internal fun RestaurantReviewSection(details: RestaurantProfileDetails?) {
             }
         }
         if (link != null) {
-            Button(onClick = {
-                openFailed = false
-                try { uriHandler.openUri(link) } catch (_: Exception) { openFailed = true }
-            }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
+            Button(onClick = { onReadReviews(link) }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = DiscoveryGreen, contentColor = Color.White)) {
-                Icon(Icons.Default.OpenInNew, null, Modifier.size(20.dp))
+                Icon(Icons.Default.RateReview, null, Modifier.size(20.dp))
                 Spacer(Modifier.width(8.dp))
-                Text("Read reviews on Google Maps")
+                Text("Read reviews")
             }
-            if (openFailed) Text("Couldn't open reviews. Please try again.", color = DiscoveryMuted, fontSize = 14.sp, lineHeight = 21.sp)
         } else Text("Review link not available", color = DiscoveryMuted, fontSize = 14.sp, lineHeight = 21.sp)
     }
 }

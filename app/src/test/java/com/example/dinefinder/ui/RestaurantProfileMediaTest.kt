@@ -3,10 +3,8 @@ package com.example.dinefinder.ui
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import androidx.activity.ComponentActivity
+import androidx.activity.ComponentDialog
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import coil.ImageLoader
@@ -19,6 +17,7 @@ import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.shadows.ShadowDialog
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
@@ -50,7 +49,7 @@ class RestaurantProfileMediaTest {
         compose.onNodeWithContentDescription("Photo of Campus Cafe").assertIsDisplayed()
         compose.onNodeWithText("12 reviews").performScrollTo().assertIsDisplayed()
         compose.onNodeWithContentDescription("5 stars: 8 reviews").assertExists()
-        compose.onNodeWithText("Read reviews on Google Maps").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Read reviews").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Fresh lunch and friendly service.").assertDoesNotExist()
         compose.onNodeWithText("Halal",substring=true).assertDoesNotExist()
         compose.onNodeWithText("5.28",substring=true).assertDoesNotExist()
@@ -82,29 +81,38 @@ class RestaurantProfileMediaTest {
         compose.onNodeWithText("Campus Cafe").assertIsDisplayed()
         compose.onNodeWithText("Start walking navigation").assertIsEnabled()
     }
-    @Test fun reviewButtonOpensTheExactStoredLocationReviewsLink() {
+    @Test fun reviewButtonOpensInsideDineFinderWithoutLaunchingMaps() {
         val testLoader = loader()
         compose.setContent { MaterialTheme { RestaurantProfileScreen(restaurant,72.0,false,{}, {},details=details,imageLoader=testLoader) } }
-        compose.onNodeWithText("Read reviews on Google Maps").performScrollTo().performClick()
-        compose.runOnIdle {
-            val intent = shadowOf(compose.activity).nextStartedActivity
-            assertEquals(android.content.Intent.ACTION_VIEW, intent.action)
-            assertEquals(details.locationReviewsLink, intent.dataString)
-        }
+        compose.onNodeWithText("Read reviews").performScrollTo().performClick()
+        compose.onNodeWithTag("in_app_reviews").assertIsDisplayed()
+        compose.onNodeWithText("Restaurant reviews").assertIsDisplayed()
+        compose.onNodeWithTag("review_web_content").assertIsDisplayed()
+        compose.runOnIdle { assertNull(shadowOf(compose.activity).nextStartedActivity) }
     }
-    @Test fun missingBrowserProvidesErrorMessage() {
-        compose.setContent { CompositionLocalProvider(LocalUriHandler provides object : UriHandler {
-            override fun openUri(uri: String) { throw IllegalArgumentException("No handler") }
-        }) { MaterialTheme { RestaurantReviewSection(details) } } }
-        compose.onNodeWithText("Read reviews on Google Maps").performClick()
-        compose.onNodeWithText("Couldn't open reviews. Please try again.").assertIsDisplayed()
+    @Test fun closingReviewsReturnsToTheSameRestaurantProfile() {
+        val testLoader = loader()
+        compose.setContent { MaterialTheme { RestaurantProfileScreen(restaurant,72.0,false,{}, {},details=details,imageLoader=testLoader) } }
+        compose.onNodeWithText("Read reviews").performScrollTo().performClick()
+        compose.onNodeWithContentDescription("Close reviews").performClick()
+        compose.onNodeWithTag("restaurant_profile").assertIsDisplayed()
+        compose.onNodeWithTag("in_app_reviews").assertDoesNotExist()
+        compose.onNodeWithText("Start walking navigation").assertIsEnabled()
+        compose.onNodeWithText("Read reviews").performScrollTo().performClick()
+        compose.runOnIdle { (ShadowDialog.getLatestDialog() as ComponentDialog).onBackPressedDispatcher.onBackPressed() }
+        compose.onNodeWithTag("restaurant_profile").assertIsDisplayed()
+        compose.onNodeWithTag("in_app_reviews").assertDoesNotExist()
     }
     @Test
     @Config(sdk=[28],qualifiers="w320dp-h480dp",fontScale=2f)
     fun mediaAndReviewLinkRemainScrollableOnSmallScreens() {
         val testLoader = loader()
         compose.setContent { MaterialTheme { RestaurantProfileScreen(restaurant,72.0,false,{}, {}, details=details, imageLoader=testLoader) } }
-        compose.onNodeWithText("Read reviews on Google Maps").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Read reviews").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Start walking navigation").assertIsDisplayed()
+        compose.onNodeWithText("Read reviews").performClick()
+        compose.onNodeWithContentDescription("Back from reviews").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Close reviews").assertIsDisplayed().performClick()
         compose.onNodeWithText("Start walking navigation").assertIsDisplayed()
     }
 }

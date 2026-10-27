@@ -260,3 +260,14 @@ then pull, sync and install/run 0.6.2. Open a restaurant and scroll to Reviews.
 in Maps or a browser. Review counts and star breakdowns remain in DineFinder;
 the former written-review list is replaced by this link. Missing links show a
 clear message. No Google API key is required.
+
+
+## Reviews inside DineFinder (0.6.3)
+
+Pull, sync and install/run 0.6.3. The **Read reviews** button now loads the stored
+review URL in DineFinder. Confirm no Maps app/browser opens. Test Back through
+webpage history and Close returning to the same restaurant. Switch apps and back
+to check pause/resume. Airplane mode or a failed page should offer retry.
+The same Supabase endpoint from migration 202610280002 is used; no additional SQL
+is required if it is already installed. Google controls its website and may show
+consent or restrict embedded pages; check this on the actual phone.
