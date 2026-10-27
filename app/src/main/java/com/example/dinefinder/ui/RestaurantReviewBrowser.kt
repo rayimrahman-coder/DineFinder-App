@@ -4,6 +4,8 @@ import android.graphics.Bitmap
 import android.net.http.SslError
 import android.webkit.*
 import android.widget.FrameLayout
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -48,7 +50,6 @@ internal fun RestaurantReviewBrowser(name: String, url: String, controller: Revi
     var loading by remember(url) { mutableStateOf(true) }
     var progress by remember(url) { mutableFloatStateOf(0f) }
     var failure by remember(url) { mutableStateOf<String?>(null) }
-    var blockedLink by remember(url) { mutableStateOf(false) }
     var attempt by remember(url) { mutableIntStateOf(0) }
     DisposableEffect(owner, controller) {
         val observer = LifecycleEventObserver { _, event ->
@@ -78,10 +79,6 @@ internal fun RestaurantReviewBrowser(name: String, url: String, controller: Revi
             if (loading && failure == null) {
                 LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth(), color = DiscoveryGreen)
                 Text("Loading reviews…", Modifier.padding(horizontal = 18.dp, vertical = 6.dp), color = DiscoveryMuted, fontSize = 12.sp)
-            }
-            if (blockedLink) Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text("This action isn't available in the review viewer.", Modifier.weight(1f), color = DiscoveryMuted, fontSize = 13.sp)
-                TextButton(onClick = { blockedLink = false }) { Text("Dismiss", color = DiscoveryGreen) }
             }
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 if (!isInAppReviewUrl(url)) {
@@ -116,18 +113,29 @@ internal fun RestaurantReviewBrowser(name: String, url: String, controller: Revi
                                         callback.invoke(origin, false, false)
                                     }
                                 }
+                                val navigation = ReviewWebNavigation()
                                 webViewClient = object : WebViewClient() {
-                                    override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
-                                        val block = !isInAppReviewUrl(request.url.toString())
-                                        if (block && request.isForMainFrame && controller.webView === view) blockedLink = true
-                                        return block
+                                    private fun navigate(view: WebView, link: String, mainFrame: Boolean): Boolean {
+                                        if (controller.webView !== view) return true
+                                        return when (val decision = navigation.decide(link, mainFrame)) {
+                                            ReviewWebDecision.StayInWebView -> false
+                                            is ReviewWebDecision.LoadFallback -> {
+                                                loading = true; failure = null
+                                                view.loadUrl(decision.url)
+                                                true
+                                            }
+                                            ReviewWebDecision.BlockSubframe -> true
+                                            ReviewWebDecision.ShowUnavailable -> {
+                                                loading = false
+                                                failure = "Google Maps hasn't provided a review page that can open here. Try again or return to the restaurant."
+                                                true
+                                            }
+                                        }
                                     }
+                                    override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean =
+                                        navigate(view, request.url.toString(), request.isForMainFrame)
                                     @Deprecated("Android legacy callback")
-                                    override fun shouldOverrideUrlLoading(view: WebView, link: String): Boolean {
-                                        val block = !isInAppReviewUrl(link)
-                                        if (block && controller.webView === view) blockedLink = true
-                                        return block
-                                    }
+                                    override fun shouldOverrideUrlLoading(view: WebView, link: String): Boolean = navigate(view, link, true)
                                     override fun onPageStarted(view: WebView, link: String?, favicon: Bitmap?) {
                                         if (controller.webView === view) { loading = true; progress = 0f; failure = null }
                                     }
@@ -151,7 +159,10 @@ internal fun RestaurantReviewBrowser(name: String, url: String, controller: Revi
                                         }
                                     }
                                 }
-                                setDownloadListener { _, _, _, _, _ -> blockedLink = true }
+                                setDownloadListener { _, _, _, _, _ ->
+                                    loading = false
+                                    failure = "This review page is requesting a download. Return to the restaurant or retry the page."
+                                }
                                 // No Supabase headers, tokens, native bridges or admin credentials are supplied.
                                 loadUrl(url)
                             }
@@ -167,11 +178,11 @@ internal fun RestaurantReviewBrowser(name: String, url: String, controller: Revi
                         })
                 }
                 if (failure != null) Surface(Modifier.fillMaxSize(), color = Color.White) {
-                    Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.Center,
+                    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.Center,
                         horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(failure.orEmpty(), color = DiscoveryMuted, fontSize = 15.sp, lineHeight = 23.sp)
                         Spacer(Modifier.height(16.dp))
-                        Button(onClick = { failure = null; loading = true; progress = 0f; blockedLink = false; attempt++ },
+                        Button(onClick = { failure = null; loading = true; progress = 0f; attempt++ },
                             colors = ButtonDefaults.buttonColors(containerColor = DiscoveryGreen)) { Text("Retry reviews") }
                         TextButton(onClick = onClose) { Text("Back to restaurant", color = DiscoveryGreen) }
                     }

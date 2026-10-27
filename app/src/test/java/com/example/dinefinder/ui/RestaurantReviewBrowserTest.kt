@@ -27,8 +27,8 @@ class RestaurantReviewBrowserTest {
     private fun screen(close: () -> Unit = {}) {
         compose.setContent { MaterialTheme { RestaurantReviewBrowser("Campus Cafe",url,controller,close) } }
     }
-    private fun request(main: Boolean = true) = object : WebResourceRequest {
-        override fun getUrl(): Uri = Uri.parse(this@RestaurantReviewBrowserTest.url)
+    private fun request(main: Boolean = true, link: String = url) = object : WebResourceRequest {
+        override fun getUrl(): Uri = Uri.parse(link)
         override fun isForMainFrame() = main
         override fun isRedirect() = false
         override fun hasGesture() = true
@@ -72,7 +72,35 @@ class RestaurantReviewBrowserTest {
             assertFalse(client.shouldOverrideUrlLoading(view,"https://www.google.com/maps?review=next"))
             assertNull(shadowOf(compose.activity).nextStartedActivity)
         }
-        compose.onNodeWithText("This action isn't available in the review viewer.").assertIsDisplayed()
+        compose.onNodeWithText("Google Maps hasn't provided a review page that can open here. Try again or return to the restaurant.").assertIsDisplayed()
+        compose.onNodeWithText("Retry reviews").assertIsDisplayed()
+    }
+    @Suppress("DEPRECATION")
+    @Test fun mapsIntentFallbackLoadsInsideDineFinderWithoutLaunchingTheApp() {
+        screen()
+        val fallback = "https://www.google.com/maps/place/Cafe/data=!9m1!1b1"
+        val link = "intent://maps/#Intent;scheme=https;package=com.google.android.apps.maps;S.browser_fallback_url=" + Uri.encode(fallback) + ";end"
+        compose.runOnIdle {
+            val view = controller.webView!!
+            assertTrue(shadowOf(view).webViewClient.shouldOverrideUrlLoading(view,request(link=link)))
+            assertEquals(fallback,shadowOf(view).lastLoadedUrl)
+            assertNull(shadowOf(compose.activity).nextStartedActivity)
+        }
+        compose.onNodeWithText("Retry reviews").assertDoesNotExist()
+    }
+    @Suppress("DEPRECATION")
+    @Test fun repeatedFallbackShowsUsefulRecoveryInsteadOfRedirectLoopOrBlankPage() {
+        screen()
+        val fallback="https://www.google.com/maps/place/Cafe/data=!9m1!1b1"
+        val link="intent://maps/#Intent;scheme=https;S.browser_fallback_url="+Uri.encode(fallback)+";end"
+        compose.runOnIdle {
+            val view=controller.webView!!; val client=shadowOf(view).webViewClient
+            client.shouldOverrideUrlLoading(view,link)
+            client.shouldOverrideUrlLoading(view,link)
+        }
+        compose.onNodeWithText("Retry reviews").assertIsDisplayed()
+        compose.onNodeWithText("Back to restaurant").assertIsDisplayed()
+        compose.runOnIdle { assertNull(shadowOf(compose.activity).nextStartedActivity) }
     }
     @Test fun mainPageFailureHasRetryAndSubresourceFailureDoesNotReplaceReviews() {
         screen()
@@ -99,6 +127,18 @@ class RestaurantReviewBrowserTest {
         compose.activityRule.scenario.moveToState(Lifecycle.State.RESUMED)
         compose.runOnIdle { assertTrue(shadowOf(view).wasOnResumeCalled()); visible=false }
         compose.runOnIdle { assertTrue(shadowOf(view).wasDestroyCalled()); assertNull(controller.webView) }
+    }
+    @Test
+    @Config(sdk=[28],qualifiers="w320dp-h480dp",fontScale=2f)
+    fun unsupportedPageRecoveryStaysReachableWithLargeText() {
+        screen()
+        compose.runOnIdle {
+            val view=controller.webView!!
+            shadowOf(view).webViewClient.shouldOverrideUrlLoading(view,request(link="intent://maps/#Intent;scheme=https;end"))
+        }
+        compose.onNodeWithText("Retry reviews").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Back to restaurant").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithContentDescription("Close reviews").assertIsDisplayed()
     }
     @Test fun invalidReviewUrlsAreRejected() {
         for (link in listOf("http://www.google.com/maps", "https://user:password@www.google.com/maps", "javascript:alert(1)", "file:///data/local"))

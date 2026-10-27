@@ -271,3 +271,13 @@ to check pause/resume. Airplane mode or a failed page should offer retry.
 The same Supabase endpoint from migration 202610280002 is used; no additional SQL
 is required if it is already installed. Google controls its website and may show
 consent or restrict embedded pages; check this on the actual phone.
+
+
+## Review-page redirect fix (0.6.4)
+
+Pull, sync and install/run 0.6.4. Open Food Corner's review screen again. Supported
+Google Maps HTTPS fallback redirects now load inside DineFinder. A missing or
+repeating fallback shows Retry and Back to restaurant instead of a blank view.
+The app does not launch the Maps app or change Supabase data. Test the live
+Google page on your phone; Google may still decline embedded access. No new SQL
+is required.

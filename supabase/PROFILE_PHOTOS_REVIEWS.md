@@ -1,4 +1,4 @@
-# Profile photos and in-app reviews (Android 0.6.3)
+# Profile photos and in-app reviews (Android 0.6.4)
 
 ## Enable in Supabase
 
@@ -7,7 +7,7 @@
    [202610280002_profile_review_links.sql](migrations/202610280002_profile_review_links.sql)
    in Supabase SQL Editor. It is safe to repeat and also works if the earlier
    photo/review migration has not been run.
-3. Pull the Android code, sync Gradle and run version 0.6.3 on the phone.
+3. Pull the Android code, sync Gradle and run version 0.6.4 on the phone.
 4. Open a restaurant profile and tap **Read reviews**.
 
 The button loads the exact `location_reviews_link` stored on the restaurant's
@@ -79,5 +79,22 @@ Tests verify URL loading, no external intents, navigation history, close/reopen,
 page errors/retry, unsafe-link blocking and lifecycle cleanup with a simulated
 WebView. Google page rendering and consent behavior need physical-phone testing.
 
-Version 0.6.3 uses the same `location_reviews_link` endpoint as 0.6.2. No additional
+Version 0.6.4 uses the same `location_reviews_link` endpoint as 0.6.2. No additional
 SQL is needed if migration 202610280002 has already been run.
+
+
+## Maps app redirects and recovery
+
+Some Google Maps pages request an Android app intent instead of continuing on
+the website. The viewer parses those links without launching the intent. When
+Google provides an HTTPS Maps `browser_fallback_url`, or the intent contains an
+HTTPS Maps URL, it loads that address in DineFinder. Automatic fallbacks accept
+only known Google Maps hosts/paths, reject credentials and non-HTTPS URLs, and
+stop repeated fallbacks after a finite retry budget. Normal blank child frames
+continue without a false blocked-action banner.
+
+If no supported fallback exists, or redirects repeat, the viewer shows Retry
+and Back to restaurant rather than leaving a blank page. It does not spoof a
+browser, bypass TLS errors or overcome Google's embedding restrictions. The
+link alone cannot guarantee access to written review text. Fully native review
+cards require actual review text to be stored in Supabase.

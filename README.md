@@ -167,7 +167,7 @@ use `supabase/diagnose_nearby.sql` to compare database and public-role searches.
 On Windows, use `gradlew.bat`. The APK is generated at
 `app/build/outputs/apk/debug/app-debug.apk`.
 
-Version 0.6.3 passes the debug APK build, Android lint and 118 targeted tests
+Version 0.6.4 passes the debug APK build, Android lint and 127 targeted tests
 covering Supabase/authentication, route calculations, speech lifecycle, camera-mode
 switching, profile media/reviews and screen regressions. The profile-media SQL
 checks also pass against a disposable database. Physical-phone GPS/camera/AR, installed
