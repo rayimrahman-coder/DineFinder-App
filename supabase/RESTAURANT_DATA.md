@@ -44,17 +44,23 @@ service; it does not use that service to obtain restaurant profiles.
 
 ## Supplied Labuan spreadsheet
 
-`imports/20261023_labuan_outscraper.sql` is a complete SQL Editor import (including
-setup). From 598 spreadsheet listings, it selects 328 operational food outlets,
-excludes 251 entries not clearly food-service businesses and 19 closed food
-outlets. Restaurants, cafes, food courts, hawkers, bakeries and dessert/drink
-outlets are included. Source status and details are not independently verified.
-The two owner-supplied food courts are retained. On an empty project the total
-is 330. Re-running the import adds no duplicate records.
+Use the [complete profile import instructions](IMPORT_RESTAURANT_PROFILES.md) and
+`imports/20261027_full_restaurant_profiles.sql`. It imports **328 operational food
+outlets only**, with all **65 original spreadsheet fields** stored in
+`public.restaurant_source_profiles` and linked to the app's `public.restaurants`.
+The remaining 270 source listings are excluded entirely.
 
-Optional phone/website/review-count/source columns are stored in Supabase. The
-current app displays the core profile fields returned by `nearby_restaurants`;
-these additional contact/source columns are available for future UI support.
-Imported halal status stays unknown. Required price-level defaults are
-placeholders, not verified prices. SQL was tested twice in a disposable PostGIS
-database; it has not been automatically deployed to your live project.
+Existing records and manual corrections are preserved. Missing restaurant rows
+are inserted; empty/unknown supported fields can be filled from the file. Re-running
+adds no duplicates. The SQL also repairs missing nearby-search columns such as
+`tags`, without resetting restaurant coordinates or altering login records.
+
+The current app displays supported profile fields returned by `nearby_restaurants`.
+Additional source fields (such as photo links, review distributions, menu/order
+URLs and business metadata) remain stored for dashboard use and future UI support.
+No restaurant photo, GPS coordinate or halal label is added to the profile UI.
+
+The earlier `imports/20261023_labuan_outscraper.sql` remains for historical reference;
+use the newer import above to retain full profile data and manual corrections.
+The import is tested in disposable PostGIS databases, not deployed automatically
+to the live project.

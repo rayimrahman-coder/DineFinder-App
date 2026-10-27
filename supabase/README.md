@@ -137,3 +137,11 @@ The repair does not modify Auth users or profiles. No Android reinstall is neede
 The corrected setup and spreadsheet import also reconcile existing missing
 fields. Local checks reproduce the exact missing-description failure and verify
 repeated repair, public-role discovery, and preserved owner-supplied halal flags.
+
+
+## Import all fields for the 328 supplied food outlets
+
+Use [the full profile import guide](IMPORT_RESTAURANT_PROFILES.md) and
+[the complete SQL file](imports/20261027_full_restaurant_profiles.sql). Only the
+328 selected operational food outlets are imported; each retains all 65 source
+fields. Existing restaurant coordinates and known profile values are preserved.
