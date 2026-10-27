@@ -4,6 +4,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.Photo
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
@@ -13,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -59,6 +61,9 @@ internal fun RestaurantProfilePhoto(name: String, url: String?, imageLoader: Ima
 
 @Composable
 internal fun RestaurantReviewSection(details: RestaurantProfileDetails?) {
+    val uriHandler = LocalUriHandler.current
+    val link = details?.locationReviewsLink
+    var openFailed by remember(link) { mutableStateOf(false) }
     ProfileInfoCard("Reviews", Icons.Default.Star) {
         Text(when (val count = details?.reviewCount) {
             null -> "Review count not available"
@@ -81,18 +86,17 @@ internal fun RestaurantReviewSection(details: RestaurantProfileDetails?) {
                 }
             }
         }
-        Text("Written reviews", color = DiscoveryInk, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-        if (details?.reviews.isNullOrEmpty()) {
-            Text("Written reviews are not available for this restaurant.", color = DiscoveryMuted, fontSize = 14.sp, lineHeight = 21.sp)
-        } else details.reviews.forEach { review ->
-            HorizontalDivider(color = DiscoveryBorder)
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(review.author, Modifier.weight(1f), color = DiscoveryInk, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                    review.rating?.let { Text("$it / 5", color = DiscoveryGreen, fontSize = 14.sp) }
-                }
-                Text(review.text, color = DiscoveryMuted, fontSize = 14.sp, lineHeight = 22.sp)
+        if (link != null) {
+            Button(onClick = {
+                openFailed = false
+                try { uriHandler.openUri(link) } catch (_: Exception) { openFailed = true }
+            }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = DiscoveryGreen, contentColor = Color.White)) {
+                Icon(Icons.Default.OpenInNew, null, Modifier.size(20.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("Read reviews on Google Maps")
             }
-        }
+            if (openFailed) Text("Couldn't open reviews. Please try again.", color = DiscoveryMuted, fontSize = 14.sp, lineHeight = 21.sp)
+        } else Text("Review link not available", color = DiscoveryMuted, fontSize = 14.sp, lineHeight = 21.sp)
     }
 }

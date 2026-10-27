@@ -6,6 +6,7 @@ data class RestaurantProfileDetails(
     val reviewCount: Int? = null,
     val scoreCounts: Map<Int, Int> = emptyMap(),
     val reviews: List<RestaurantReview> = emptyList(),
+    val locationReviewsLink: String? = null,
 )
 
 data class RestaurantReview(

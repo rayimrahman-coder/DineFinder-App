@@ -241,6 +241,7 @@ class DineFinderApiTest {
     @Test fun profileMediaUsesSupabasePublicRpcAndParsesRealReviewFields() = runBlocking {
         server.enqueue(json("""{"photo_url":"https://images.example.test/cafe.jpg","review_count":67,
           "score_counts":{"5":42,"4":20,"3":5,"2":0,"1":0},
+          "location_reviews_link":"https://www.google.com/maps/place/Cafe/data=!9m1!1b1",
           "reviews":[{"id":"review-1","author":"Test diner","rating":5,"text":"Fresh lunch and friendly service."}]}"""))
         val details = api.profileDetails("10000000-0000-4000-8000-000000000001")
         val request = server.takeRequest()
@@ -249,15 +250,16 @@ class DineFinderApiTest {
         assertNull(request.getHeader("Authorization"))
         assertEquals("10000000-0000-4000-8000-000000000001", JSONObject(request.body.readUtf8()).getString("restaurant_id"))
         assertEquals("https://images.example.test/cafe.jpg", details.photoUrl)
+        assertEquals("https://www.google.com/maps/place/Cafe/data=!9m1!1b1", details.locationReviewsLink)
         assertEquals(67, details.reviewCount)
         assertEquals(42, details.scoreCounts[5])
         assertEquals("Fresh lunch and friendly service.", details.reviews.single().text)
     }
     @Test fun profileMediaDropsUnsafePhotoLinksAndDoesNotInventMissingReviews() = runBlocking {
         for (url in listOf("http://images.example.test/a.jpg", "javascript:alert(1)", "https://user:password@images.example.test/a.jpg")) {
-            server.enqueue(json(JSONObject().put("photo_url", url).toString()))
+            server.enqueue(json(JSONObject().put("photo_url", url).put("location_reviews_link", url).toString()))
             val details = api.profileDetails("cafe")
-            assertNull(details.photoUrl); assertNull(details.reviewCount)
+            assertNull(details.photoUrl); assertNull(details.locationReviewsLink); assertNull(details.reviewCount)
             assertTrue(details.reviews.isEmpty()); assertTrue(details.scoreCounts.isEmpty())
         }
     }

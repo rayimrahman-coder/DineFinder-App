@@ -153,3 +153,8 @@ For Android 0.6.1, follow [photo/review setup](PROFILE_PHOTOS_REVIEWS.md) and ru
 [migration 202610280001](migrations/202610280001_profile_photos_reviews.sql).
 It exposes a narrow public profile-details endpoint while leaving raw source
 profiles and unpublished written reviews private.
+
+
+For Android 0.6.2, use [migration 202610280002](migrations/202610280002_profile_review_links.sql)
+to return the stored `location_reviews_link`. The Reviews button opens this link
+in Maps or a browser. See [the updated guide](PROFILE_PHOTOS_REVIEWS.md).

@@ -135,9 +135,10 @@ class DineFinderApi(
                 if (text.length > 5000) throw ApiException("The review response is too large.")
                 RestaurantReview(nonempty(row, "id"), string(row, "author") ?: "Diner", rating, text)
             }
-            val photo = string(data, "photo_url")?.takeIf { it.length <= 4096 }?.toHttpUrlOrNull()
-                ?.takeIf { it.isHttps && it.username.isEmpty() && it.password.isEmpty() }
-            RestaurantProfileDetails(photo?.toString(), count(data.opt("review_count")), breakdown, reviews)
+            fun httpsLink(key: String): String? = string(data, key)?.takeIf { it.length <= 4096 }?.toHttpUrlOrNull()
+                ?.takeIf { it.isHttps && it.username.isEmpty() && it.password.isEmpty() }?.toString()
+            RestaurantProfileDetails(httpsLink("photo_url"), count(data.opt("review_count")), breakdown, reviews,
+                locationReviewsLink = httpsLink("location_reviews_link"))
         }
     }
 

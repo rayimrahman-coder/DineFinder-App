@@ -250,3 +250,13 @@ Android version. Open a restaurant to load its photo and review summary. Written
 reviews appear only when actual published entries exist in `restaurant_reviews`;
 the original workbook includes aggregates but no individual review comments.
 See [the setup guide](../supabase/PROFILE_PHOTOS_REVIEWS.md).
+
+
+## Google Maps review links (0.6.2)
+
+Run `supabase/migrations/202610280002_profile_review_links.sql` in SQL Editor,
+then pull, sync and install/run 0.6.2. Open a restaurant and scroll to Reviews.
+**Read reviews on Google Maps** opens the source profile's `location_reviews_link`
+in Maps or a browser. Review counts and star breakdowns remain in DineFinder;
+the former written-review list is replaced by this link. Missing links show a
+clear message. No Google API key is required.

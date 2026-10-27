@@ -20,7 +20,10 @@ CREATE ROLE authenticated;
 CREATE TABLE public.restaurants(id uuid PRIMARY KEY, name text, rating double precision);
 INSERT INTO public.restaurants VALUES ('10000000-0000-4000-8000-000000000001','Test cafe',4.6);
 SQL
-for _ in 1 2; do sql < "$repo/supabase/migrations/202610280001_profile_photos_reviews.sql"; done
+for _ in 1 2; do
+  sql < "$repo/supabase/migrations/202610280001_profile_photos_reviews.sql"
+  sql < "$repo/supabase/migrations/202610280002_profile_review_links.sql"
+done
 sql <<'SQL'
 DO $$ DECLARE data jsonb; BEGIN
   data:=public.restaurant_profile_details('10000000-0000-4000-8000-000000000001');
@@ -33,12 +36,12 @@ CREATE TABLE public.restaurant_source_profiles(
   restaurant_id uuid, imported_at timestamptz, source_sha256 text, source_row integer,
   photo text, reviews bigint, reviews_per_score_1 bigint, reviews_per_score_2 bigint,
   reviews_per_score_3 bigint, reviews_per_score_4 bigint, reviews_per_score_5 bigint,
-  owner_id text
+  owner_id text, location_reviews_link text
 );
 ALTER TABLE public.restaurant_source_profiles ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.restaurant_source_profiles FROM PUBLIC,anon,authenticated;
 INSERT INTO public.restaurant_source_profiles VALUES
-  ('10000000-0000-4000-8000-000000000001',now(),'test',2,'https://images.example.test/source-photo.jpg',12,0,0,0,4,8,'private-owner-marker');
+  ('10000000-0000-4000-8000-000000000001',now(),'test',2,'https://images.example.test/source-photo.jpg',12,0,0,0,4,8,'private-owner-marker','https://www.google.com/maps/place/Cafe/data=!9m1!1b1');
 INSERT INTO public.restaurant_reviews(restaurant_id,author_name,rating,review_text,published) VALUES
   ('10000000-0000-4000-8000-000000000001','Test diner',5,'A published test review',true),
   ('10000000-0000-4000-8000-000000000001','Private draft',1,'Unpublished review marker',false);
@@ -47,6 +50,8 @@ DO $$ DECLARE data jsonb; BEGIN
   data:=public.restaurant_profile_details('10000000-0000-4000-8000-000000000001');
   IF data->>'photo_url'<>'https://images.example.test/source-photo.jpg' OR (data->>'review_count')::integer<>12
     THEN RAISE EXCEPTION 'Public media summary mismatch'; END IF;
+  IF data->>'location_reviews_link'<>'https://www.google.com/maps/place/Cafe/data=!9m1!1b1'
+    THEN RAISE EXCEPTION 'Stored location review link missing'; END IF;
   IF (data->'score_counts'->>'5')::integer<>8 OR jsonb_array_length(data->'reviews')<>1
     THEN RAISE EXCEPTION 'Wrong breakdown/published review count'; END IF;
   IF data->'reviews'->0->>'text'<>'A published test review'

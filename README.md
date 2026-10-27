@@ -118,7 +118,8 @@ The full-screen restaurant profile uses white cards, forest-green actions and mi
 accents. It displays restaurant details, address and distance without GPS coordinates
 or halal status. Cuisine and rating appear in dedicated cards; unrated restaurants show “Not rated”.
 Photos and reviews load from Supabase when a profile opens; missing images and
-written reviews have clear fallbacks. See [photo/review setup](supabase/PROFILE_PHOTOS_REVIEWS.md). Saved restaurants are remembered on this device. Details scroll
+review links have clear fallbacks. The Reviews button opens the stored Google Maps
+`location_reviews_link`. See [photo/review setup](supabase/PROFILE_PHOTOS_REVIEWS.md). Saved restaurants are remembered on this device. Details scroll
 while the walking navigation button stays available at the bottom.
 
 ## Voice and camera-free walking navigation
@@ -166,7 +167,7 @@ use `supabase/diagnose_nearby.sql` to compare database and public-role searches.
 On Windows, use `gradlew.bat`. The APK is generated at
 `app/build/outputs/apk/debug/app-debug.apk`.
 
-Version 0.6.1 passes the debug APK build, Android lint and 110 targeted tests
+Version 0.6.2 passes the debug APK build, Android lint and 112 targeted tests
 covering Supabase/authentication, route calculations, speech lifecycle, camera-mode
 switching, profile media/reviews and screen regressions. The profile-media SQL
 checks also pass against a disposable database. Physical-phone GPS/camera/AR, installed
