@@ -45,7 +45,7 @@ service; it does not use that service to obtain restaurant profiles.
 ## Supplied Labuan spreadsheet
 
 Use the [complete profile import instructions](IMPORT_RESTAURANT_PROFILES.md) and
-`imports/20261027_full_restaurant_profiles.sql`. It imports **328 operational food
+the smaller files in `imports/restaurant_profile_batches/`. They import **328 operational food
 outlets only**, with all **65 original spreadsheet fields** stored in
 `public.restaurant_source_profiles` and linked to the app's `public.restaurants`.
 The remaining 270 source listings are excluded entirely.

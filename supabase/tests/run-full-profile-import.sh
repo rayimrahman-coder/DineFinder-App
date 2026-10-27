@@ -20,7 +20,14 @@ CREATE ROLE authenticated;
 CREATE DATABASE workbook_fresh;
 CREATE DATABASE workbook_existing;
 SQL
-for _ in 1 2; do sql -d workbook_fresh < "$repo/supabase/imports/20261027_full_restaurant_profiles.sql"; done
+run_import() {
+  if [ "${DINEFINDER_IMPORT_BATCHES:-0}" = 1 ]; then
+    for part in "$repo"/supabase/imports/restaurant_profile_batches/*.sql; do sql -d "$1" < "$part"; done
+  else
+    sql -d "$1" < "$repo/supabase/imports/20261027_full_restaurant_profiles.sql"
+  fi
+}
+for _ in 1 2; do run_import workbook_fresh; done
 sql -d workbook_fresh <<'SQL'
 DO $$ BEGIN
   IF (SELECT count(*) FROM public.restaurants)<>328 THEN RAISE EXCEPTION 'Duplicate/missing food outlets'; END IF;
@@ -45,12 +52,12 @@ INSERT INTO public.restaurants VALUES
   ('10000000-0000-4000-8000-000000000002','Anjung Selera Sungai Pagar','Food court',5.283813104239185,115.17329255729997,4.7,'Owner-maintained address'),
   ('20000000-0000-4000-8000-000000000001','1 Go Cafe & Restaurant','Owner cuisine',5.2858836,115.2572679,4.9,'Owner-maintained cafe address');
 SQL
-sql -d workbook_existing < "$repo/supabase/imports/20261027_full_restaurant_profiles.sql"
+run_import workbook_existing
 # Reproduce accidental schema removals reported by the phone. Import repairs them.
 sql -d workbook_existing <<'SQL'
 ALTER TABLE public.restaurants DROP COLUMN tags, DROP COLUMN is_halal, DROP COLUMN opening_hours;
 SQL
-sql -d workbook_existing < "$repo/supabase/imports/20261027_full_restaurant_profiles.sql"
+run_import workbook_existing
 sql -d workbook_existing <<'SQL'
 DO $$ BEGIN
   IF (SELECT count(*) FROM public.restaurants)<>329 THEN RAISE EXCEPTION 'Existing name/proximity match duplicated'; END IF;

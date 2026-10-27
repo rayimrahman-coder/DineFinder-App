@@ -65,7 +65,7 @@ def build(source, output):
     sql = f'''-- COMPLETE FOOD-OUTLET PROFILES: 328 operational food outlets, all 65 source columns, including NULL values.
 -- Source: {source.name}; sheet: {sheet.title}
 -- SHA-256: {digest}
--- Run this WHOLE SQL file in Supabase SQL Editor. It is safe to run again.
+-- Large SQL file: use restaurant_profile_batches for SQL Editor, or a direct database connection.
 -- Full profiles are stored in public.restaurant_source_profiles (dashboard/admin access only).
 -- The remaining 270 source listings are excluded entirely, as requested.
 -- Existing restaurant IDs, names, coordinates, ratings and other supplied values are preserved.

@@ -10,12 +10,16 @@ Source details reflect the supplied export; they are not independently verified.
 
 ## Run in your Supabase project
 
-1. Download the SQL file and open it in a text editor.
-2. Open Supabase project **oueafqgadqggyinpmyoi → SQL Editor → New query**.
-3. Copy the **entire SQL file**, paste it into the editor and click **Run**.
-   This is SQL, not a CSV file or the XLSX workbook. Do not run only one highlighted
-   portion of the file; the statements share a transaction and temporary tables.
-4. The final result should show:
+The full SQL file is about 1.3 MB and exceeds the Supabase SQL Editor query-size
+limit. Use the smaller files in [restaurant_profile_batches](imports/restaurant_profile_batches/README.md).
+Each file is below 175,000 bytes (about 171 KiB).
+
+1. Open Supabase project **oueafqgadqggyinpmyoi → SQL Editor → New query**.
+2. Paste all of `00_setup.sql` and click **Run**. “Success. No rows returned” is normal.
+3. Run `01_profiles.sql`, then `02_profiles.sql`, continuing through `09_profiles.sql`,
+   **one file per query**. Replace the editor contents or open a new query each time.
+   Do not concatenate the files back into a single large query.
+4. Run `90_verify.sql` last. Its final result should show:
 
    | source_listings | linked_food_outlets | original_columns_per_listing |
    | --- | --- | --- |
@@ -27,6 +31,14 @@ Source details reflect the supplied export; they are not independently verified.
 6. In DineFinder, swipe up the scan panel and tap **Refresh location and search**.
    The app still shows only restaurants within 1 km of the phone's GPS position.
    No Android rebuild is needed for this data import.
+
+If a batch fails, stop and share that file's name and exact error. Successful
+previous batches stay imported. Retry a failed batch safely after fixing its
+error; do not delete existing tables or rows. Verification catches skipped files.
+
+The original large SQL remains available for users with a direct PostgreSQL
+connection; use a local `psql` client with your normal database connection settings.
+It is not the recommended SQL Editor path.
 
 The app's public key cannot run this import. Execute it with the dashboard's
 normal database owner access; never put an administrator key into the app or chat.
@@ -79,7 +91,8 @@ layout and reuses the existing reviewed selection in the older SQL import.
 
 ```sh
 python3 supabase/tools/build_restaurant_profile_import.py path/to/Outscraper-20261021193011s1555.xlsx
-bash supabase/tests/run-full-profile-import.sh path/to/Outscraper-20261021193011s1555.xlsx
+python3 supabase/tools/split_restaurant_profile_import.py
+DINEFINDER_IMPORT_BATCHES=1 bash supabase/tests/run-full-profile-import.sh path/to/Outscraper-20261021193011s1555.xlsx
 ```
 
 Tests run in a disposable PostGIS container. They compare every selected original
