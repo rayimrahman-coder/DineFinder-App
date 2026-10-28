@@ -296,3 +296,14 @@ appear directly in the profile, without a Google Maps page. Photos use stored
 URLs and depend on those image hosts remaining accessible. Restaurants that
 exist only in the old table are not automatically copied.
 See `supabase/APIFY_APP_DATABASE.md` for checks and troubleshooting.
+
+## 0.7.1: clear camera during walking navigation
+
+Walking navigation starts with its cards hidden behind the bottom “Swipe up for
+navigation” handle. Swipe up or tap its chevron to show camera/voice controls,
+current instruction, Directions and End. Swipe the handle down, tap the collapse
+chevron or press Back to hide the panel. The camera, GPS, arrow and voice guidance
+continue while it is hidden. Camera-off navigation still shows the scrollable
+instructions and controls. Turning the camera back on hides the cards again.
+
+Pull, Sync and Run to install this version. No SQL or Supabase changes are needed.

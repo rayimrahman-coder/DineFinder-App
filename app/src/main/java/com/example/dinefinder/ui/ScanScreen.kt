@@ -135,17 +135,21 @@ fun ScanScreen(
                     orderedRestaurants, position, busy, searchCompleted, problems, error != null,
                     selectRestaurant, retry, onShowSearchDetails)
             } else {
-                WalkingNavigationPanel(navigationCamera, { navigationCamera = !navigationCamera; cameraError = null; cameraReady = false },
-                    voiceEnabled, { voiceEnabled = !voiceEnabled }, voice, progress, busy, locationError,
-                    arEnabled, arStatus, { arEnabled = !arEnabled; arStatus = null }, isDemo,
-                    onRecalculate, { directionsVisible = true }, onClose, problems, retry) {
-                    if (isDemo) Surface(color = Color(0xFFFBECCF), shape = RoundedCornerShape(14.dp)) {
-                        Column(Modifier.padding(12.dp)) {
-                            Text("SIMULATION · fictional route", fontSize = 11.sp)
-                            Slider(value = (validHeading ?: 0.0).toFloat(), onValueChange = { onHeadingChange(it.toDouble()) }, valueRange = 0f..359f,
-                                modifier = Modifier.semantics { contentDescription = "Demo compass heading" })
-                            Slider(value = demoProgress.toFloat(), onValueChange = { onWalkChange(it.toDouble()) },
-                                modifier = Modifier.semantics { contentDescription = "Demo walking progress" })
+                key(route) {
+                    NavigationControlsSheet(navigationCamera) {
+                        WalkingNavigationPanel(navigationCamera, { navigationCamera = !navigationCamera; cameraError = null; cameraReady = false },
+                            voiceEnabled, { voiceEnabled = !voiceEnabled }, voice, progress, busy, locationError,
+                            arEnabled, arStatus, { arEnabled = !arEnabled; arStatus = null }, isDemo,
+                            onRecalculate, { directionsVisible = true }, onClose, problems, retry) {
+                            if (isDemo) Surface(color = Color(0xFFFBECCF), shape = RoundedCornerShape(14.dp)) {
+                                Column(Modifier.padding(12.dp)) {
+                                    Text("SIMULATION · fictional route", fontSize = 11.sp)
+                                    Slider(value = (validHeading ?: 0.0).toFloat(), onValueChange = { onHeadingChange(it.toDouble()) }, valueRange = 0f..359f,
+                                        modifier = Modifier.semantics { contentDescription = "Demo compass heading" })
+                                    Slider(value = demoProgress.toFloat(), onValueChange = { onWalkChange(it.toDouble()) },
+                                        modifier = Modifier.semantics { contentDescription = "Demo walking progress" })
+                                }
+                            }
                         }
                     }
                 }

@@ -71,8 +71,7 @@ internal fun WalkingNavigationPanel(
                 }) { Text("Open speech settings", color = DiscoveryGreen) }
             }
         }
-        if (cameraEnabled) Spacer(Modifier.height(160.dp))
-        else {
+        if (!cameraEnabled) {
             Surface(color = DiscoveryMint.copy(alpha = .45f), shape = RoundedCornerShape(24.dp)) {
                 Column(Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(12.dp)) {

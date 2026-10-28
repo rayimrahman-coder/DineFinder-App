@@ -5,6 +5,13 @@ Maps, Places, Directions, or routing API key is required. The public Supabase
 project configuration is included, so a fresh clone can build and run without
 creating a local key file.
 
+## Camera navigation controls (0.7.1)
+
+Walking navigation keeps the camera clear with a small bottom swipe handle.
+Swipe up to reveal controls and instructions; swipe down or press Back to hide
+them. Voice and GPS continue with the panel hidden. No database migration is
+needed for this UI update.
+
 ## Current database: Apify food outlets (0.7.0)
 
 Run [the Apify app migration](supabase/migrations/202610290001_apify_app_endpoints.sql)

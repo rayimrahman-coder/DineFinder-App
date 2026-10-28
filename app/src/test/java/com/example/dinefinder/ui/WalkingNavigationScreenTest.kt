@@ -52,10 +52,34 @@ class WalkingNavigationScreenTest {
         compose.waitForIdle()
     }
     private fun spoken() = shadowOf(ShadowTextToSpeech.getLastTextToSpeechInstance())
+    @Test fun cameraStartsClearAndControlsCanBeSwipedUpAndHiddenAgain() {
+        screen(); speechReady()
+        compose.onNodeWithText("Swipe up for navigation").assertIsDisplayed()
+        compose.onNodeWithText("Current instruction").assertDoesNotExist()
+        compose.onNodeWithText("Turn camera off").assertDoesNotExist()
+        compose.runOnIdle { assertEquals(true, cameraActive) }
+        compose.onNodeWithTag("navigation_sheet_handle").performTouchInput { swipeUp() }
+        compose.onNodeWithText("Turn camera off").assertIsDisplayed()
+        compose.onNodeWithText("Current instruction").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag("navigation_sheet_handle").performTouchInput { swipeDown() }
+        compose.onNodeWithText("Current instruction").assertDoesNotExist()
+        compose.onNodeWithText("Swipe up for navigation").assertIsDisplayed()
+        val spokenCount = spoken().spokenTextList.size
+        compose.runOnIdle { position = corner }
+        compose.runOnIdle {
+            assertEquals(true, cameraActive)
+            assertEquals(spokenCount + 1, spoken().spokenTextList.size)
+            assertEquals("Turn right onto Dining Lane", spoken().lastSpokenText)
+        }
+        compose.onNodeWithContentDescription("Show navigation controls").performClick()
+        compose.runOnIdle { compose.activity.onBackPressedDispatcher.onBackPressed() }
+        compose.onNodeWithText("Swipe up for navigation").assertIsDisplayed()
+    }
     @Test fun cameraCanTurnOffAndOnWithoutChangingRouteOrLosingWrittenDirections() {
         screen()
         compose.runOnIdle { assertEquals(true, cameraActive) }
-        compose.onNodeWithText("Turn camera off").performClick()
+        compose.onNodeWithContentDescription("Show navigation controls").performClick()
+        compose.onNodeWithText("Turn camera off").performScrollTo().performClick()
         compose.onNodeWithText("Camera off · GPS guidance").assertIsDisplayed()
         compose.runOnIdle { assertEquals(false, cameraActive) }
         compose.waitForIdle()
@@ -70,6 +94,8 @@ class WalkingNavigationScreenTest {
         compose.activity.onBackPressedDispatcher.onBackPressed()
         compose.onNodeWithText("Turn camera on").performScrollTo().performClick()
         compose.runOnIdle { assertEquals(true, cameraActive) }
+        compose.onNodeWithText("Turn camera off").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Show navigation controls").performClick()
         compose.onNodeWithText("Turn camera off").assertIsDisplayed()
     }
     @Test fun voiceDeduplicatesGpsUpdatesSupportsMuteAndRepeatAndWorksWithCameraOff() {
@@ -78,7 +104,8 @@ class WalkingNavigationScreenTest {
         val firstCount = spoken().spokenTextList.size
         compose.runOnIdle { heading = 40.0; position = GeoPoint(5.2804, 115.176405) }
         compose.runOnIdle { assertEquals(firstCount, spoken().spokenTextList.size) }
-        compose.onNodeWithText("Turn camera off").performClick()
+        compose.onNodeWithContentDescription("Show navigation controls").performClick()
+        compose.onNodeWithText("Turn camera off").performScrollTo().performClick()
         compose.onNodeWithText("Repeat instruction").performClick()
         compose.runOnIdle { assertEquals(firstCount + 1, spoken().spokenTextList.size) }
         compose.onNodeWithText("Mute voice").performClick()
@@ -104,7 +131,8 @@ class WalkingNavigationScreenTest {
     @Config(sdk = [28], qualifiers = "w320dp-h480dp", fontScale = 2f)
     fun cameraFreeNavigationControlsRemainReachableWithLargeText() {
         screen()
-        compose.onNodeWithText("Turn camera off").performClick()
+        compose.onNodeWithContentDescription("Show navigation controls").performClick()
+        compose.onNodeWithText("Turn camera off").performScrollTo().performClick()
         compose.onNodeWithText("Mute voice").assertIsDisplayed()
         compose.onNodeWithText("Directions", substring = false).performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("End", substring = false).performScrollTo().assertIsDisplayed()
