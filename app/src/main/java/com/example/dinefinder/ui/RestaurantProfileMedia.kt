@@ -4,7 +4,6 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.RateReview
 import androidx.compose.material.icons.filled.Photo
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
@@ -59,8 +58,7 @@ internal fun RestaurantProfilePhoto(name: String, url: String?, imageLoader: Ima
 }
 
 @Composable
-internal fun RestaurantReviewSection(details: RestaurantProfileDetails?, onReadReviews: (String) -> Unit) {
-    val link = details?.locationReviewsLink
+internal fun RestaurantReviewSection(details: RestaurantProfileDetails?) {
     ProfileInfoCard("Reviews", Icons.Default.Star) {
         Text(when (val count = details?.reviewCount) {
             null -> "Review count not available"
@@ -83,24 +81,5 @@ internal fun RestaurantReviewSection(details: RestaurantProfileDetails?, onReadR
                 }
             }
         }
-        val reviews = details?.reviews.orEmpty()
-        if (reviews.isNotEmpty()) {
-            Text("Reviews from Google Maps", color = DiscoveryMuted, fontSize = 13.sp)
-            reviews.forEach { review ->
-                HorizontalDivider(color = DiscoveryBorder)
-                Column(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(review.author, color = DiscoveryGreen, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                    review.rating?.let { Text("$it / 5", color = DiscoveryGreen, fontSize = 14.sp) }
-                    Text(review.text, color = DiscoveryMuted, fontSize = 15.sp, lineHeight = 23.sp)
-                }
-            }
-        } else if (link != null) {
-            Button(onClick = { onReadReviews(link) }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = DiscoveryGreen, contentColor = Color.White)) {
-                Icon(Icons.Default.RateReview, null, Modifier.size(20.dp))
-                Spacer(Modifier.width(8.dp))
-                Text("Read reviews")
-            }
-        } else Text("No written reviews available yet", color = DiscoveryMuted, fontSize = 14.sp, lineHeight = 21.sp)
     }
 }

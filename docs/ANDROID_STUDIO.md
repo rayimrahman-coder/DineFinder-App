@@ -327,3 +327,10 @@ expandable troubleshooting, app permissions and a link to Settings. It describes
 the current swipe-up navigation controls and camera-free voice guidance.
 
 Pull, Sync and Run. No SQL migration or Supabase Storage bucket is needed.
+
+## 0.7.3: ratings without written comments
+
+Restaurant profiles show ratings, review totals and star distributions. Written
+comments, author names, the Read reviews button and the empty-comments message
+are removed. Photos and walking navigation remain available. Existing imported
+review data is retained in Supabase; no SQL migration is needed. Pull, Sync and Run.

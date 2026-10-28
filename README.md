@@ -5,6 +5,12 @@ Maps, Places, Directions, or routing API key is required. The public Supabase
 project configuration is included, so a fresh clone can build and run without
 creating a local key file.
 
+## Restaurant ratings (0.7.3)
+
+Written review comments and review links are hidden. Profiles retain restaurant
+ratings, review totals, star distributions and photos. No database changes are
+needed; existing imported review data is retained.
+
 ## Profile and Help (0.7.2)
 
 Change or remove your picture from Profile → Settings. The system photo picker

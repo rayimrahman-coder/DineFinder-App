@@ -56,7 +56,7 @@ internal fun HelpScreen(onBack: () -> Unit, onOpenSettings: () -> Unit) {
             item { HelpHeading("Get started") }
             item { HelpCard {
                 HelpStep("1", "Find nearby restaurants", "Tap Scan for Restaurant on Home. Allow camera and precise location access, then wait for a fresh location.")
-                HelpStep("2", "Explore your surroundings", "Turn slowly to find restaurant markers within 1 km. Swipe up from the bottom to browse the list. Tap a place to see its details, photos and available reviews.")
+                HelpStep("2", "Explore your surroundings", "Turn slowly to find restaurant markers within 1 km. Swipe up from the bottom to browse the list. Tap a place to see its details, photos and ratings.")
                 HelpStep("3", "Start walking navigation", "Choose Start walking navigation. Follow the arrow and spoken directions. Swipe up to see controls and instructions; swipe down to clear the camera view.")
             } }
             item { HelpHeading("Common questions") }
@@ -64,7 +64,7 @@ internal fun HelpScreen(onBack: () -> Unit, onOpenSettings: () -> Unit) {
             item { HelpQuestion("Can I navigate without the camera?", "Yes. During navigation, swipe up and choose Turn camera off. GPS directions and voice guidance continue. Choose Turn camera on to return to the camera view.") }
             item { HelpQuestion("Why can’t I hear directions?", "Swipe up during navigation and enable voice. Turn up your phone’s media volume and tap Repeat instruction. If voice is unavailable, use Open speech settings to install or enable an English voice. Keep DineFinder open; background and lock-screen guidance are not supported.") }
             item { HelpQuestion("How do I change my profile picture?", "Open Profile, then Settings and Change photo. Choose a picture using your phone’s photo picker. Your picture is saved for this user on this phone. Use Remove photo to restore the default avatar.") }
-            item { HelpQuestion("Why are some photos or reviews missing?", "Not every restaurant has photos or written reviews available. Photos also need an internet connection and may become unavailable. Reopen the profile or use Retry photo when shown. A review count may include reviews whose comments have not been imported.") }
+            item { HelpQuestion("Why are some photos missing?", "Not every restaurant has photos available. Photos need an internet connection and may become unavailable. Reopen the profile or use Retry photo when shown.") }
             item { HelpQuestion("What if a place is temporarily closed?", "Check the restaurant’s profile before setting off. Temporarily closed places are labelled. Opening hours and closure information can change, so confirm with the restaurant if you are unsure.") }
             item { HelpCard {
                 Text("Need to change access?", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)

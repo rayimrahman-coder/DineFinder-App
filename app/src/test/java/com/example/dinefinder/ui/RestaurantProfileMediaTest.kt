@@ -49,20 +49,20 @@ class RestaurantProfileMediaTest {
         compose.onNodeWithContentDescription("Photo of Campus Cafe").assertIsDisplayed()
         compose.onNodeWithText("12 reviews").performScrollTo().assertIsDisplayed()
         compose.onNodeWithContentDescription("5 stars: 8 reviews").assertExists()
-        compose.onNodeWithText("Read reviews").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Read reviews").assertDoesNotExist()
         compose.onNodeWithText("Fresh lunch and friendly service.").assertDoesNotExist()
         compose.onNodeWithText("Halal",substring=true).assertDoesNotExist()
         compose.onNodeWithText("5.28",substring=true).assertDoesNotExist()
         compose.onNodeWithText("Start walking navigation").assertIsDisplayed()
     }
-    @Test fun importedWrittenReviewsStayNativeWithoutOpeningMaps() {
+    @Test fun writtenReviewsAreHiddenWhileRatingsRemainVisible() {
         val native = details.copy(locationReviewsLink = null, reviews = listOf(
             RestaurantReview("apify-review", "Imported diner", 4, "Fresh lunch and friendly service.")))
         compose.setContent { MaterialTheme { RestaurantProfileScreen(restaurant,72.0,false,{}, {},
             details=native, imageLoader=loader()) } }
-        compose.onNodeWithText("Fresh lunch and friendly service.").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("Imported diner").assertExists()
-        compose.onNodeWithText("4 / 5").assertExists()
+        compose.onNodeWithText("Fresh lunch and friendly service.").assertDoesNotExist()
+        compose.onNodeWithText("Imported diner").assertDoesNotExist()
+        compose.onNodeWithText("12 reviews").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Read reviews").assertDoesNotExist()
         compose.onNodeWithTag("review_web_content").assertDoesNotExist()
         compose.runOnIdle { assertNull(shadowOf(compose.activity).nextStartedActivity) }
@@ -72,7 +72,7 @@ class RestaurantProfileMediaTest {
             details=RestaurantProfileDetails(reviewCount=12)) } }
         compose.onNodeWithText("Photo not available").assertIsDisplayed()
         compose.onNodeWithText("12 reviews").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("No written reviews available yet").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("No written reviews available yet").assertDoesNotExist()
     }
     @Test fun failedPhotoStillAllowsNavigation() {
         var navigated = false
@@ -93,38 +93,13 @@ class RestaurantProfileMediaTest {
         compose.onNodeWithText("Campus Cafe").assertIsDisplayed()
         compose.onNodeWithText("Start walking navigation").assertIsEnabled()
     }
-    @Test fun reviewButtonOpensInsideDineFinderWithoutLaunchingMaps() {
-        val testLoader = loader()
-        compose.setContent { MaterialTheme { RestaurantProfileScreen(restaurant,72.0,false,{}, {},details=details,imageLoader=testLoader) } }
-        compose.onNodeWithText("Read reviews").performScrollTo().performClick()
-        compose.onNodeWithTag("in_app_reviews").assertIsDisplayed()
-        compose.onNodeWithText("Restaurant reviews").assertIsDisplayed()
-        compose.onNodeWithTag("review_web_content").assertIsDisplayed()
-        compose.runOnIdle { assertNull(shadowOf(compose.activity).nextStartedActivity) }
-    }
-    @Test fun closingReviewsReturnsToTheSameRestaurantProfile() {
-        val testLoader = loader()
-        compose.setContent { MaterialTheme { RestaurantProfileScreen(restaurant,72.0,false,{}, {},details=details,imageLoader=testLoader) } }
-        compose.onNodeWithText("Read reviews").performScrollTo().performClick()
-        compose.onNodeWithContentDescription("Close reviews").performClick()
-        compose.onNodeWithTag("restaurant_profile").assertIsDisplayed()
-        compose.onNodeWithTag("in_app_reviews").assertDoesNotExist()
-        compose.onNodeWithText("Start walking navigation").assertIsEnabled()
-        compose.onNodeWithText("Read reviews").performScrollTo().performClick()
-        compose.runOnIdle { (ShadowDialog.getLatestDialog() as ComponentDialog).onBackPressedDispatcher.onBackPressed() }
-        compose.onNodeWithTag("restaurant_profile").assertIsDisplayed()
-        compose.onNodeWithTag("in_app_reviews").assertDoesNotExist()
-    }
     @Test
     @Config(sdk=[28],qualifiers="w320dp-h480dp",fontScale=2f)
-    fun mediaAndReviewLinkRemainScrollableOnSmallScreens() {
+    fun ratingsRemainScrollableOnSmallScreens() {
         val testLoader = loader()
         compose.setContent { MaterialTheme { RestaurantProfileScreen(restaurant,72.0,false,{}, {}, details=details, imageLoader=testLoader) } }
-        compose.onNodeWithText("Read reviews").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("Start walking navigation").assertIsDisplayed()
-        compose.onNodeWithText("Read reviews").performClick()
-        compose.onNodeWithContentDescription("Back from reviews").assertIsDisplayed()
-        compose.onNodeWithContentDescription("Close reviews").assertIsDisplayed().performClick()
+        compose.onNodeWithText("12 reviews").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Read reviews").assertDoesNotExist()
         compose.onNodeWithText("Start walking navigation").assertIsDisplayed()
     }
 }
