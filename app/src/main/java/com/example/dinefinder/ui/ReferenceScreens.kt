@@ -383,8 +383,9 @@ fun ProfileScreen(
     onSettings: () -> Unit,
     onHelp: () -> Unit,
     onLogout: () -> Unit,
+    photoPath: String? = null,
 ) {
-    Surface(modifier = Modifier.fillMaxSize(), color = DinePaper) {
+    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         LazyColumn(
             contentPadding = PaddingValues(horizontal = 18.dp, vertical = 22.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
@@ -393,18 +394,13 @@ fun ProfileScreen(
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(26.dp),
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.surface,
                 ) {
                     Column(
                         modifier = Modifier.padding(horizontal = 20.dp, vertical = 26.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        Box(
-                            modifier = Modifier.size(70.dp).background(DineMint, CircleShape),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Icon(Icons.Default.Person, null, tint = DineGreen, modifier = Modifier.size(36.dp))
-                        }
+                        UserProfileAvatar(photoPath)
                         Spacer(Modifier.height(13.dp))
                         Text(
                             displayName.ifBlank { "Guest" },
@@ -415,7 +411,7 @@ fun ProfileScreen(
                         Text(
                             if (isGuest) "Guest profile" else (email ?: "DineFinder member"),
                             style = MaterialTheme.typography.bodyLarge,
-                            color = DineMuted,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center,
                         )
                     }
@@ -435,7 +431,7 @@ private fun ProfileAction(label: String, icon: ImageVector, onClick: () -> Unit,
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
         border = BorderStroke(1.dp, Color(0xFFE5E8E1)),
-        color = Color.White,
+        color = MaterialTheme.colorScheme.surface,
         shadowElevation = 0.3.dp,
     ) {
         Row(
@@ -456,7 +452,7 @@ private fun ProfileAction(label: String, icon: ImageVector, onClick: () -> Unit,
                 label,
                 modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.titleMedium,
-                color = if (destructive) DineRed else DineInk,
+                color = if (destructive) DineRed else MaterialTheme.colorScheme.onSurface,
             )
             Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = Color(0xFFA1AAA3), modifier = Modifier.size(25.dp))
         }

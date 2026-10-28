@@ -307,3 +307,23 @@ continue while it is hidden. Camera-off navigation still shows the scrollable
 instructions and controls. Turning the camera back on hides the cards again.
 
 Pull, Sync and Run to install this version. No SQL or Supabase changes are needed.
+
+## 0.7.2: profile pictures and Help
+
+Profile → Settings → Change photo opens Android's system image picker. Select a
+photo to save a private, resized copy on this phone. Profile and Settings show the
+same circular avatar. Remove photo restores the default. Cancelling the picker
+leaves the current photo intact; an unreadable or oversized image shows a retry
+message without replacing the previous picture. This feature requests no broad
+storage/gallery permission. Photo input is limited to 16 MB and decoded to at
+most 768 pixels on its longest side.
+
+Pictures are isolated by the local account identity and persist across app
+restarts. They are not uploaded to Supabase or synchronized to other phones;
+uninstalling/clearing app data removes them. Guest mode has its own local photo.
+
+Help now uses a safe-area header and scrollable cards with setup steps,
+expandable troubleshooting, app permissions and a link to Settings. It describes
+the current swipe-up navigation controls and camera-free voice guidance.
+
+Pull, Sync and Run. No SQL migration or Supabase Storage bucket is needed.

@@ -5,6 +5,13 @@ Maps, Places, Directions, or routing API key is required. The public Supabase
 project configuration is included, so a fresh clone can build and run without
 creating a local key file.
 
+## Profile and Help (0.7.2)
+
+Change or remove your picture from Profile → Settings. The system photo picker
+saves a private copy per user on this phone; pictures do not sync to Supabase.
+Help includes scrollable getting-started instructions, FAQs and a permissions
+shortcut. This release needs no database migration.
+
 ## Camera navigation controls (0.7.1)
 
 Walking navigation keeps the camera clear with a small bottom swipe handle.

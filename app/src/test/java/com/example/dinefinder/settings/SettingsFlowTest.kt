@@ -13,6 +13,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextReplacement
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import androidx.core.view.WindowInsetsControllerCompat
 import com.example.dinefinder.MainActivity
@@ -36,7 +37,8 @@ class SettingsFlowTest {
         override fun before() {
             val context = RuntimeEnvironment.getApplication()
             context.getSharedPreferences("dinefinder_profile", Context.MODE_PRIVATE).edit().clear().commit()
-            UserPreferences(context).signIn("rayim@example.com")
+            UserPreferences(context).signIn("guest@dinefinder.local")
+            UserPreferences(context).saveUserName("guest@dinefinder.local", "Rayim")
         }
     }
 
@@ -47,12 +49,12 @@ class SettingsFlowTest {
     fun savingUsernameUpdatesBothProfileAndHome() {
         openSettings()
         composeRule.onNodeWithText("Username").performTextReplacement(" Rayim Rahman ")
-        composeRule.onNodeWithText("Save username").performClick()
+        composeRule.onNodeWithText("Save username").performScrollTo().performClick()
         composeRule.onNodeWithContentDescription("Back to Profile").performClick()
         composeRule.onNodeWithText("Rayim Rahman").assertIsDisplayed()
         composeRule.onNodeWithText("Home").performClick()
         composeRule.onNodeWithText("Hello, Rayim Rahman").assertIsDisplayed()
-        assertEquals("Rayim Rahman", UserPreferences(composeRule.activity).userName("rayim@example.com"))
+        assertEquals("Rayim Rahman", UserPreferences(composeRule.activity).userName("guest@dinefinder.local"))
     }
 
     @Test
@@ -68,14 +70,16 @@ class SettingsFlowTest {
     @Test
     fun darkModeUpdatesImmediatelyAndSurvivesActivityRecreation() {
         openSettings()
-        composeRule.onNode(isToggleable()).assertIsOff().performClick().assertIsOn()
+        composeRule.onNodeWithTag("settings_list").performScrollToNode(isToggleable())
+        composeRule.onNode(isToggleable()).performScrollTo().assertIsOff().performClick().assertIsOn()
         composeRule.runOnIdle {
             assertTrue(UserPreferences(composeRule.activity).isDarkMode())
             assertFalse(WindowInsetsControllerCompat(composeRule.activity.window, composeRule.activity.window.decorView).isAppearanceLightStatusBars)
         }
         composeRule.activityRule.scenario.recreate()
         composeRule.onNodeWithText("Settings").assertIsDisplayed()
-        composeRule.onNode(isToggleable()).assertIsOn().performClick().assertIsOff()
+        composeRule.onNodeWithTag("settings_list").performScrollToNode(isToggleable())
+        composeRule.onNode(isToggleable()).performScrollTo().assertIsOn().performClick().assertIsOff()
         composeRule.runOnIdle {
             assertFalse(UserPreferences(composeRule.activity).isDarkMode())
             assertTrue(WindowInsetsControllerCompat(composeRule.activity.window, composeRule.activity.window.decorView).isAppearanceLightStatusBars)
@@ -86,15 +90,15 @@ class SettingsFlowTest {
     fun helpOpensTutorialAndLinksToSettings() {
         composeRule.onNodeWithText("Profile").performClick()
         composeRule.onNodeWithText("Help").performClick()
-        composeRule.onNodeWithText("How to set up your own API key").assertIsDisplayed()
+        composeRule.onNodeWithText("Help & support").assertIsDisplayed()
         composeRule.onNodeWithTag("help_list").performScrollToNode(hasText("Open Settings"))
         composeRule.onNodeWithText("Open Settings").performClick()
-        composeRule.onNodeWithText("Username").assertIsDisplayed()
+        composeRule.onNodeWithText("Username").performScrollTo().assertIsDisplayed()
     }
 
     private fun openSettings() {
         composeRule.onNodeWithText("Profile").performClick()
         composeRule.onNodeWithText("Settings").performClick()
-        composeRule.onNodeWithText("Username").assertIsDisplayed()
+        composeRule.onNodeWithText("Username").performScrollTo().assertIsDisplayed()
     }
 }

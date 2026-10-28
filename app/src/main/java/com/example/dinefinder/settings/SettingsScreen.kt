@@ -44,6 +44,11 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.dinefinder.ui.UserProfileAvatar
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.semantics
 import com.example.dinefinder.R
 import com.example.dinefinder.ui.theme.DineFinderTheme
 
@@ -59,7 +64,12 @@ internal fun SettingsScreen(
     onClearApiKey: () -> String? = { null },
     onApiKeyHelp: () -> Unit = {},
     showApiKeySettings: Boolean = true,
-    backLabel: String? = null
+    backLabel: String? = null,
+    photoPath: String? = null,
+    photoBusy: Boolean = false,
+    photoError: String? = null,
+    onChangePhoto: () -> Unit = {},
+    onRemovePhoto: () -> Unit = {},
 ) {
     var editedName by rememberSaveable(userName) { mutableStateOf(userName) }
     var nameEdited by rememberSaveable { mutableStateOf(false) }
@@ -112,6 +122,23 @@ internal fun SettingsScreen(
             contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
+            item {
+                Card(shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                    Column(Modifier.fillMaxWidth().padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text("Profile picture", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        UserProfileAvatar(photoPath)
+                        Text("Choose a photo to personalise your profile. Saved on this phone.",
+                            style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Button(onClick = onChangePhoto, enabled = !photoBusy, modifier = Modifier.fillMaxWidth()) {
+                            Text(if (photoBusy) "Saving photo…" else "Change photo")
+                        }
+                        if (photoPath != null) TextButton(onClick = onRemovePhoto, enabled = !photoBusy) { Text("Remove photo") }
+                        photoError?.let { Text(it, color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }) }
+                    }
+                }
+            }
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(

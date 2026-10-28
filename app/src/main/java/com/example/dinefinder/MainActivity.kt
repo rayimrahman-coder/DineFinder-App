@@ -1,5 +1,13 @@
 package com.example.dinefinder
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import com.example.dinefinder.settings.ProfilePhotoStore
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
@@ -80,6 +88,7 @@ private enum class AppScreen { SIGN_IN, HOME, PROFILE, SETTINGS, HELP }
 
 class MainActivity : ComponentActivity() {
     private val preferences by lazy { UserPreferences(this) }
+    private val photoStore by lazy { ProfilePhotoStore(this) }
     private val apiKeyStore by lazy { ApiKeyStore(this) }
     private var settingsRequested by mutableStateOf(false)
     private var returnToNavigation by mutableStateOf(false)
@@ -104,6 +113,27 @@ class MainActivity : ComponentActivity() {
             var name by remember { mutableStateOf(preferences.userName(email)) }
             var darkMode by remember { mutableStateOf(preferences.isDarkMode()) }
             var apiKey by remember { mutableStateOf(apiKeyStore.apiKey()) }
+            var photoPath by remember(email) { mutableStateOf(photoStore.photoPath(email)) }
+            var photoBusy by remember { mutableStateOf(false) }
+            var photoError by remember(email) { mutableStateOf<String?>(null) }
+            var photoAccount by rememberSaveable { mutableStateOf("") }
+            val photoScope = rememberCoroutineScope()
+            val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+                val selectedAccount = photoAccount
+                if (uri != null && selectedAccount == email && selectedAccount.isNotBlank()) photoScope.launch {
+                    photoBusy = true
+                    photoError = null
+                    try {
+                        val path = withContext(Dispatchers.IO) { photoStore.save(selectedAccount, uri) }
+                        if (email == selectedAccount) photoPath = path
+                    } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                        throw cancelled
+                    } catch (_: Exception) {
+                        if (email == selectedAccount) photoError = "Photo couldn’t be saved. Choose a JPG, PNG or WebP image under 16 MB."
+                    } finally { photoBusy = false }
+                }
+            }
+
             SideEffect {
                 val barStyle = if (darkMode && !appViewModel.state.scan) SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
                 else SystemBarStyle.light(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT)
@@ -211,12 +241,35 @@ class MainActivity : ComponentActivity() {
                                 name = preferences.userName(email)
                                 screen = AppScreen.SIGN_IN
                             },
-                            modifier = Modifier.padding(paddingValues)
+                            modifier = Modifier.padding(paddingValues),
+                            photoPath = photoPath
                         )
                     }
 
                     AppScreen.SETTINGS -> SettingsScreen(
                         userName = name,
+                        photoPath = photoPath,
+                        photoBusy = photoBusy,
+                        photoError = photoError,
+                        onChangePhoto = {
+                            photoAccount = email
+                            photoError = null
+                            runCatching { photoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
+                                .onFailure { photoError = "Photo picker unavailable. Please try again." }
+                        },
+                        onRemovePhoto = {
+                            val selectedAccount = email
+                            photoScope.launch {
+                                photoBusy = true
+                                photoError = null
+                                try {
+                                    withContext(Dispatchers.IO) { photoStore.remove(selectedAccount) }
+                                    if (email == selectedAccount) photoPath = null
+                                } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled
+                                } catch (_: Exception) { photoError = "Photo couldn’t be removed. Please try again."
+                                } finally { photoBusy = false }
+                            }
+                        },
                         darkMode = darkMode,
                         onBack = { if (returnToNavigation) finish() else screen = AppScreen.PROFILE },
                         onSaveUserName = { enteredName ->
@@ -256,12 +309,10 @@ class MainActivity : ComponentActivity() {
                         backLabel = if (returnToNavigation) getString(R.string.settings_back_to_navigation) else null
                     )
 
-                    AppScreen.HELP -> Column(Modifier.fillMaxSize().padding(24.dp)) {
-                        Button(onClick = { screen = helpReturnScreen }) { Text("Back") }
-                        Text("DineFinder help", style = MaterialTheme.typography.headlineMedium)
-                        Text("Scan uses your GPS to search the Supabase restaurant database within 1 km. Allow location and camera access. Tap a marker to view its saved profile, then choose Navigate.")
-                        Text("No Google Places key is needed. Missing restaurants must be added to Supabase by the project owner. If no results appear, check GPS, internet access, and database setup.")
-                    }
+                    AppScreen.HELP -> HelpScreen(
+                        onBack = { screen = helpReturnScreen },
+                        onOpenSettings = { screen = AppScreen.SETTINGS }
+                    )
                 }
                 SupabaseDiscoveryFlow(appViewModel)
             }
@@ -471,136 +522,13 @@ private fun RadarGraphic(modifier: Modifier = Modifier) {
 
 @Composable
 private fun ProfileScreen(
-    email: String,
-    name: String,
-    onSettings: () -> Unit,
-    onHelp: () -> Unit,
-    onLogout: () -> Unit,
-    modifier: Modifier = Modifier
+    email: String, name: String,
+    onSettings: () -> Unit, onHelp: () -> Unit, onLogout: () -> Unit,
+    modifier: Modifier = Modifier, photoPath: String? = null,
 ) {
-    LazyColumn(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        item {
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(bottomStart = 22.dp, bottomEnd = 22.dp),
-                color = MaterialTheme.colorScheme.surface
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 20.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(5.dp)
-                ) {
-                    Surface(
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.secondaryContainer
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = "Profile",
-                            tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                            modifier = Modifier
-                                .padding(14.dp)
-                                .size(30.dp)
-                        )
-                    }
-                    Text(name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    Text(
-                        text = if (email == "guest@dinefinder.local") "Guest profile" else email,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = .65f)
-                    )
-                }
-            }
-        }
-
-        item {
-            ProfileAction(
-                icon = Icons.Default.Settings,
-                label = "Settings",
-                onClick = onSettings
-            )
-        }
-        item {
-            ProfileAction(
-                icon = Icons.AutoMirrored.Filled.HelpOutline,
-                label = "Help",
-                onClick = onHelp
-            )
-        }
-        item {
-            ProfileAction(
-                icon = Icons.AutoMirrored.Filled.Logout,
-                label = "Logout",
-                destructive = true,
-                onClick = onLogout
-            )
-        }
-    }
-}
-
-@Composable
-private fun ProfileAction(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    label: String,
-    supportingText: String? = null,
-    destructive: Boolean = false,
-    onClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 13.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Surface(
-                shape = CircleShape,
-                color = if (destructive) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceVariant
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = if (destructive) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(8.dp).size(18.dp)
-                )
-            }
-            Spacer(Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
-                    color = if (destructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
-                )
-                if (supportingText != null) {
-                    Text(
-                        text = supportingText,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = .58f)
-                    )
-                }
-            }
-            Icon(
-                imageVector = Icons.Default.ChevronRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = .38f)
-            )
-        }
+    Box(modifier) {
+        com.example.dinefinder.ui.ProfileScreen(name, email,
+            email == "guest@dinefinder.local", onSettings, onHelp, onLogout, photoPath)
     }
 }
 
