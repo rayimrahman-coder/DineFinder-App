@@ -48,7 +48,7 @@ class DineFinderApiTest {
         val places = api.nearby(from)
         val request = server.takeRequest()
         assertEquals("POST", request.method)
-        assertEquals("/rest/v1/rpc/nearby_restaurants", request.path)
+        assertEquals("/rest/v1/rpc/apify_nearby_restaurants", request.path)
         assertEquals(publicKey, request.getHeader("apikey"))
         assertNull(request.getHeader("Authorization"))
         val body = JSONObject(request.body.readUtf8())
@@ -71,7 +71,7 @@ class DineFinderApiTest {
     @Test fun missingRpcProvidesExactSetupActionWithoutEchoingServerBody() = runBlocking {
         server.enqueue(json("""{"code":"PGRST202","message":"server-internal-detail"}""", 404))
         val error = expectApiError { api.nearby(from) }
-        assertEquals("Restaurant database is not set up yet. Run supabase/setup.sql in the Supabase SQL Editor.", error.message)
+        assertEquals("Restaurant database is not set up yet. Run supabase/migrations/202610290001_apify_app_endpoints.sql in the Supabase SQL Editor.", error.message)
         assertFalse(error.message.orEmpty().contains("server-internal-detail"))
     }
 
@@ -245,7 +245,7 @@ class DineFinderApiTest {
           "reviews":[{"id":"review-1","author":"Test diner","rating":5,"text":"Fresh lunch and friendly service."}]}"""))
         val details = api.profileDetails("10000000-0000-4000-8000-000000000001")
         val request = server.takeRequest()
-        assertEquals("/rest/v1/rpc/restaurant_profile_details", request.path)
+        assertEquals("/rest/v1/rpc/apify_restaurant_profile_details", request.path)
         assertEquals(publicKey, request.getHeader("apikey"))
         assertNull(request.getHeader("Authorization"))
         assertEquals("10000000-0000-4000-8000-000000000001", JSONObject(request.body.readUtf8()).getString("restaurant_id"))

@@ -73,14 +73,14 @@ class DineFinderApi(
             .put("latitude", center.latitude)
             .put("longitude", center.longitude)
             .put("radius_meters", 1000)
-        val request = publicRequest("rest/v1/rpc/nearby_restaurants")
+        val request = publicRequest("rest/v1/rpc/apify_nearby_restaurants")
             .post(body.toString().toRequestBody(JSON_MEDIA_TYPE))
             .build()
         val response = execute(request)
         if (response.status !in 200..299) {
             val code = runCatching { JSONObject(response.body).optString("code") }.getOrDefault("")
             if (response.status == 404 || code in setOf("PGRST202", "42P01")) {
-                throw ApiException("Restaurant database is not set up yet. Run supabase/setup.sql in the Supabase SQL Editor.")
+                throw ApiException("Restaurant database is not set up yet. Run supabase/migrations/202610290001_apify_app_endpoints.sql in the Supabase SQL Editor.")
             }
             // Report only bounded protocol codes, never the server body, SQL details,
             // headers, keys or user data. A configured key is not proof of access.
@@ -109,7 +109,7 @@ class DineFinderApi(
     suspend fun profileDetails(restaurantId: String): RestaurantProfileDetails = withContext(Dispatchers.IO) {
         if (restaurantId.isBlank() || restaurantId.length > 128) throw ApiException("Choose a restaurant to view its profile.")
         val body = JSONObject().put("restaurant_id", restaurantId)
-        val response = execute(publicRequest("rest/v1/rpc/restaurant_profile_details")
+        val response = execute(publicRequest("rest/v1/rpc/apify_restaurant_profile_details")
             .post(body.toString().toRequestBody(JSON_MEDIA_TYPE)).build())
         if (response.status !in 200..299) throw ApiException("Photos and reviews couldn't be loaded. Please try again.")
         parseSafely("Photos and reviews couldn't be read. Please try again.") {

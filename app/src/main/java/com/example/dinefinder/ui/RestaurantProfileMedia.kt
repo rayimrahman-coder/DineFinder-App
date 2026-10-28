@@ -83,13 +83,24 @@ internal fun RestaurantReviewSection(details: RestaurantProfileDetails?, onReadR
                 }
             }
         }
-        if (link != null) {
+        val reviews = details?.reviews.orEmpty()
+        if (reviews.isNotEmpty()) {
+            Text("Reviews from Google Maps", color = DiscoveryMuted, fontSize = 13.sp)
+            reviews.forEach { review ->
+                HorizontalDivider(color = DiscoveryBorder)
+                Column(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(review.author, color = DiscoveryGreen, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                    review.rating?.let { Text("$it / 5", color = DiscoveryGreen, fontSize = 14.sp) }
+                    Text(review.text, color = DiscoveryMuted, fontSize = 15.sp, lineHeight = 23.sp)
+                }
+            }
+        } else if (link != null) {
             Button(onClick = { onReadReviews(link) }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = DiscoveryGreen, contentColor = Color.White)) {
                 Icon(Icons.Default.RateReview, null, Modifier.size(20.dp))
                 Spacer(Modifier.width(8.dp))
                 Text("Read reviews")
             }
-        } else Text("Review link not available", color = DiscoveryMuted, fontSize = 14.sp, lineHeight = 21.sp)
+        } else Text("No written reviews available yet", color = DiscoveryMuted, fontSize = 14.sp, lineHeight = 21.sp)
     }
 }

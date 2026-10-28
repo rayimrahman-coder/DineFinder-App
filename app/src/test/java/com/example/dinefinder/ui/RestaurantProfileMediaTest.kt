@@ -28,7 +28,7 @@ class RestaurantProfileMediaTest {
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
     private val restaurant = Restaurant("media-cafe", "Campus Cafe", "Cafe", "", "Labuan", GeoPoint(5.28,115.17),4.5,1,"",0L)
     private val details = RestaurantProfileDetails("https://images.example.test/cafe.jpg", 12, mapOf(5 to 8, 4 to 4, 3 to 0, 2 to 0, 1 to 0),
-        listOf(RestaurantReview("test-review", "Test diner", 5, "Fresh lunch and friendly service.")),
+        emptyList(),
         locationReviewsLink="https://www.google.com/maps/place/Campus+Cafe/data=!9m1!1b1")
     @Volatile private var fetchedImages = 0
     private fun loader(fail: Boolean = false): ImageLoader = ImageLoader.Builder(compose.activity).components {
@@ -55,12 +55,24 @@ class RestaurantProfileMediaTest {
         compose.onNodeWithText("5.28",substring=true).assertDoesNotExist()
         compose.onNodeWithText("Start walking navigation").assertIsDisplayed()
     }
+    @Test fun importedWrittenReviewsStayNativeWithoutOpeningMaps() {
+        val native = details.copy(locationReviewsLink = null, reviews = listOf(
+            RestaurantReview("apify-review", "Imported diner", 4, "Fresh lunch and friendly service.")))
+        compose.setContent { MaterialTheme { RestaurantProfileScreen(restaurant,72.0,false,{}, {},
+            details=native, imageLoader=loader()) } }
+        compose.onNodeWithText("Fresh lunch and friendly service.").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Imported diner").assertExists()
+        compose.onNodeWithText("4 / 5").assertExists()
+        compose.onNodeWithText("Read reviews").assertDoesNotExist()
+        compose.onNodeWithTag("review_web_content").assertDoesNotExist()
+        compose.runOnIdle { assertNull(shadowOf(compose.activity).nextStartedActivity) }
+    }
     @Test fun missingMediaHasHonestFallbackWithoutFabricatedWrittenReviews() {
         compose.setContent { MaterialTheme { RestaurantProfileScreen(restaurant,72.0,false,{}, {},
             details=RestaurantProfileDetails(reviewCount=12)) } }
         compose.onNodeWithText("Photo not available").assertIsDisplayed()
         compose.onNodeWithText("12 reviews").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("Review link not available").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("No written reviews available yet").performScrollTo().assertIsDisplayed()
     }
     @Test fun failedPhotoStillAllowsNavigation() {
         var navigated = false

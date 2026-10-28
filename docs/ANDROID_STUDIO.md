@@ -281,3 +281,18 @@ repeating fallback shows Retry and Back to restaurant instead of a blank view.
 The app does not launch the Maps app or change Supabase data. Test the live
 Google page on your phone; Google may still decline embedded access. No new SQL
 is required.
+
+
+## 0.7.0: switch to the imported Apify table
+
+Before testing this release, run
+`supabase/migrations/202610290001_apify_app_endpoints.sql` in your project's SQL
+Editor. Your Apify import batches must already be installed. Then Pull, Sync,
+and Run. Existing publishable configuration and login stay the same.
+
+Discovery now reads `apify_food_outlets` within 1 km. Temporarily closed venues
+are included and labelled in their profiles. Written reviews from the import
+appear directly in the profile, without a Google Maps page. Photos use stored
+URLs and depend on those image hosts remaining accessible. Restaurants that
+exist only in the old table are not automatically copied.
+See `supabase/APIFY_APP_DATABASE.md` for checks and troubleshooting.

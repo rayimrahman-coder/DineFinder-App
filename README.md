@@ -5,6 +5,14 @@ Maps, Places, Directions, or routing API key is required. The public Supabase
 project configuration is included, so a fresh clone can build and run without
 creating a local key file.
 
+## Current database: Apify food outlets (0.7.0)
+
+Run [the Apify app migration](supabase/migrations/202610290001_apify_app_endpoints.sql)
+in Supabase after importing your batches, then update the Android app. Discovery
+and profile media now use `apify_food_outlets`; imported written reviews appear
+inside the profile. See [activation and data access details](supabase/APIFY_APP_DATABASE.md).
+The old restaurant tables remain available, but are no longer the app's source.
+
 ## Run in Android Studio
 
 1. Pull the latest GitHub code and open the repository root containing
@@ -20,7 +28,7 @@ See [the Android Studio guide](docs/ANDROID_STUDIO.md).
 ## How it works
 
 1. Android's native `LocationManager` obtains the user's real GPS coordinates.
-2. Supabase's `nearby_restaurants` RPC searches records within **1,000 metres**.
+2. Supabase's `apify_nearby_restaurants` RPC searches the new Apify table within **1,000 metres**.
 3. The live camera places restaurant markers using GPS positions and compass
    bearings. The list also works on devices without a compass.
 4. Tap a marker or list item to view the restaurant's Supabase profile.
