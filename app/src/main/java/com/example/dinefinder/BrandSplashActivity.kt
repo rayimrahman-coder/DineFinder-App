@@ -11,20 +11,35 @@ import android.os.Handler
 import android.os.Looper
 import android.view.Gravity
 import android.view.View
-import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.ProgressBar
 import android.widget.VideoView
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
+import android.view.WindowManager
 
-/** Bundled, silent animation. Failure or Skip always leads to the existing app. */
+/** Full-screen silent branding. Progress is shown only during a real playback wait. */
 class BrandSplashActivity : ComponentActivity() {
     private lateinit var video: VideoView
     private val handler = Handler(Looper.getMainLooper())
+    private lateinit var progress: ProgressBar
+    private var waitingForVideo = true
+    private val showLoading = Runnable {
+        if (resumed && !completed && waitingForVideo) progress.visibility = View.VISIBLE
+    }
+    private fun loading(waiting: Boolean) {
+        waitingForVideo = waiting
+        handler.removeCallbacks(showLoading)
+        if (::progress.isInitialized) progress.visibility = View.GONE
+        if (waiting && resumed) handler.postDelayed(showLoading, 500)
+    }
     private var completed = false
     private var resumed = false
     private var prepared = false
@@ -38,6 +53,10 @@ class BrandSplashActivity : ComponentActivity() {
         position = savedInstanceState?.getInt("splash_position") ?: 0
         enableEdgeToEdge(statusBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT),
             navigationBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT))
+        window.attributes = window.attributes.apply {
+            layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+        }
+        hideSystemBars()
         val root = FrameLayout(this).apply { setBackgroundColor(getColor(R.color.brand_splash_background)) }
         val poster = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -51,18 +70,24 @@ class BrandSplashActivity : ComponentActivity() {
             })
         }
         root.addView(poster, FrameLayout.LayoutParams(-1,-1))
-        video = VideoView(this).apply {
+        video = SplashVideoView(this).apply {
             id = R.id.brand_splash_video
             setAudioFocusRequest(AudioManager.AUDIOFOCUS_NONE)
             importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
             setOnPreparedListener { player ->
                 prepared = true
+                loading(false)
+                videoDimensions(player.videoWidth, player.videoHeight)
                 player.setVolume(0f,0f)
                 player.isLooping = false
                 if (resumed) resumePlayback()
             }
             setOnInfoListener { _, what, _ ->
-                if (what == MediaPlayer.MEDIA_INFO_VIDEO_RENDERING_START) poster.visibility = View.GONE
+                when (what) {
+                    MediaPlayer.MEDIA_INFO_VIDEO_RENDERING_START -> { poster.visibility = View.GONE; loading(false) }
+                    MediaPlayer.MEDIA_INFO_BUFFERING_START -> loading(true)
+                    MediaPlayer.MEDIA_INFO_BUFFERING_END -> loading(false)
+                }
                 false
             }
             setOnCompletionListener {
@@ -75,31 +100,19 @@ class BrandSplashActivity : ComponentActivity() {
                 true
             }
         }
-        // Preserve the uploaded portrait video on every screen without stretching.
+        // Cover the entire window, including system-bar areas, without distortion.
         root.addView(video, FrameLayout.LayoutParams(-1,-1,Gravity.CENTER))
         // Keep the static logo visible until actual frames arrive (no black loading rectangle).
         root.bringChildToFront(poster)
-        val skip = Button(this).apply {
-            id = R.id.brand_splash_skip
-            text = getString(R.string.splash_skip)
-            contentDescription = getString(R.string.splash_skip_description)
-            isAllCaps = false
-            setTextColor(Color.WHITE)
-            backgroundTintList = android.content.res.ColorStateList.valueOf(Color.rgb(7,85,72))
-            minHeight = dp(48)
-            setPadding(dp(24),dp(8),dp(24),dp(8))
-            setOnClickListener { openApp() }
+        progress = ProgressBar(this).apply {
+            id = R.id.brand_splash_progress
+            visibility = View.GONE
+            contentDescription = "Preparing DineFinder"
+            indeterminateTintList = android.content.res.ColorStateList.valueOf(Color.rgb(7,85,72))
         }
-        root.addView(skip, FrameLayout.LayoutParams(-2,-2,Gravity.BOTTOM or Gravity.END).apply {
-            setMargins(dp(24),dp(24),dp(24),dp(24))
+        root.addView(progress, FrameLayout.LayoutParams(dp(32),dp(32),Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL).apply {
+            bottomMargin = dp(72)
         })
-        root.setOnApplyWindowInsetsListener { _, insets ->
-            (skip.layoutParams as FrameLayout.LayoutParams).apply {
-                rightMargin = dp(24) + insets.systemWindowInsetRight
-                bottomMargin = dp(24) + insets.systemWindowInsetBottom
-            }.also { skip.layoutParams = it }
-            insets
-        }
         setContentView(root)
         runCatching { video.setVideoURI(Uri.parse("android.resource://$packageName/${R.raw.dinefinder_splash}")) }
             .onFailure { openApp() }
@@ -108,6 +121,8 @@ class BrandSplashActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         resumed = true
+        hideSystemBars()
+        loading(!prepared)
         if (!completed) {
             when {
                 playbackFailed || position >= SPLASH_DURATION_MS -> openApp()
@@ -129,6 +144,8 @@ class BrandSplashActivity : ComponentActivity() {
 
     override fun onPause() {
         resumed = false
+        handler.removeCallbacks(showLoading)
+        if (::progress.isInitialized) progress.visibility = View.GONE
         handler.removeCallbacks(timeout)
         if (::video.isInitialized) { position = video.currentPosition.coerceIn(0, SPLASH_DURATION_MS); video.pause() }
         super.onPause()
@@ -145,11 +162,18 @@ class BrandSplashActivity : ComponentActivity() {
     internal fun openApp() {
         if (completed || isFinishing || isDestroyed) return
         completed = true
+        loading(false)
         handler.removeCallbacks(timeout)
         if (::video.isInitialized) video.stopPlayback()
         startActivity(Intent(this,MainActivity::class.java),
             ActivityOptions.makeCustomAnimation(this,android.R.anim.fade_in,android.R.anim.fade_out).toBundle())
         finish()
+    }
+    private fun hideSystemBars() {
+        WindowCompat.getInsetsController(window, window.decorView).apply {
+            systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            hide(WindowInsetsCompat.Type.systemBars())
+        }
     }
     companion object { internal const val SPLASH_DURATION_MS = 3_000 }
     private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()

@@ -5,12 +5,12 @@ Maps, Places, Directions, or routing API key is required. The public Supabase
 project configuration is included, so a fresh clone can build and run without
 creating a local key file.
 
-## Branding and splash (0.8.1)
+## Branding and splash (0.8.2)
 
-The fork-and-location logo appears on the launcher and welcome page. The new
-portrait intro is exactly three seconds long with no audio track. Video completion
-opens the app immediately with a fade; Skip, background pause/resume and a bounded
-playback-failure fallback remain available. No database changes are required.
+The fork-and-location logo appears on the launcher and welcome page. The silent
+three-second splash fills the screen with no Skip button or baked-in loading
+ring. Progress only appears for delayed video preparation or buffering; completion
+opens the app immediately. No database changes are required.
 
 ## Restaurant ratings (0.7.3)
 

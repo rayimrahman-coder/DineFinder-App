@@ -30,16 +30,44 @@ class BrandSplashActivityTest {
         assertNull(shadowOf(activity).nextStartedActivity)
         controller.pause().stop().destroy()
     }
-    @Test fun skipEntersExistingAppOnlyOnceAndCancelsWatchdog() {
+    @Test fun normalPlaybackHasNoSkipButtonOrUnnecessaryLoadingIndicator() {
         val controller=Robolectric.buildActivity(BrandSplashActivity::class.java).setup()
         val activity=controller.get()
-        activity.findViewById<android.view.View>(R.id.brand_splash_skip).performClick()
-        activity.findViewById<android.view.View>(R.id.brand_splash_skip).performClick()
+        val video=activity.findViewById<VideoView>(R.id.brand_splash_video)
+        val progress=activity.findViewById<android.view.View>(R.id.brand_splash_progress)
+        assertEquals(android.view.View.GONE,progress.visibility)
+        assertNull(activity.findViewById<android.view.View>(activity.resources.getIdentifier("brand_splash_skip","id",activity.packageName)))
+        shadowOf(video).onPreparedListener.onPrepared(MediaPlayer())
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(1))
+        assertEquals(android.view.View.GONE,progress.visibility)
+        shadowOf(video).onCompletionListener.onCompletion(MediaPlayer())
+        shadowOf(video).onCompletionListener.onCompletion(MediaPlayer())
         assertEquals(MainActivity::class.java.name,shadowOf(activity).nextStartedActivity.component?.className)
-        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(15))
         assertNull(shadowOf(activity).nextStartedActivity)
-        assertTrue(activity.isFinishing)
         controller.pause().stop().destroy()
+    }
+    @Test fun indicatorOnlyAppearsForSlowPreparationAndHidesWhenReady() {
+        val controller=Robolectric.buildActivity(BrandSplashActivity::class.java).setup()
+        val activity=controller.get()
+        val progress=activity.findViewById<android.view.View>(R.id.brand_splash_progress)
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(100))
+        assertEquals(android.view.View.GONE,progress.visibility)
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(500))
+        assertEquals(android.view.View.VISIBLE,progress.visibility)
+        shadowOf(activity.findViewById<VideoView>(R.id.brand_splash_video)).onPreparedListener.onPrepared(MediaPlayer())
+        assertEquals(android.view.View.GONE,progress.visibility)
+        controller.pause().stop().destroy()
+    }
+    @Test fun portraitAndLandscapeWindowsAreCoveredWithoutDistortion() {
+        val context=org.robolectric.RuntimeEnvironment.getApplication()
+        for ((width,height) in listOf(393 to 851,851 to 393)) {
+            val view=com.example.dinefinder.SplashVideoView(context)
+            view.measure(android.view.View.MeasureSpec.makeMeasureSpec(width,android.view.View.MeasureSpec.EXACTLY),
+                android.view.View.MeasureSpec.makeMeasureSpec(height,android.view.View.MeasureSpec.EXACTLY))
+            assertTrue(view.measuredWidth>=width)
+            assertTrue(view.measuredHeight>=height)
+            assertEquals(720.0/1280.0,view.measuredWidth.toDouble()/view.measuredHeight,0.002)
+        }
     }
     @Test fun videoCompletionAndPlaybackFailureBothOpenApp() {
         for (fail in listOf(false,true)) {

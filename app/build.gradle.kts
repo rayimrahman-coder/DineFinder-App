@@ -46,8 +46,8 @@ android {
         applicationId = "com.example.dinefinder"
         minSdk = 28
         targetSdk = 35
-        versionCode = 23
-        versionName = "0.8.1"
+        versionCode = 24
+        versionName = "0.8.2"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField(
             "String",

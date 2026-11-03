@@ -1,5 +1,6 @@
 <resources>
     <style name="Theme.DineFinder.Launch" parent="Theme.DineFinder">
+        <item name="android:windowFullscreen">true</item>
         <item name="android:windowSplashScreenBackground">@color/brand_splash_background</item>
         <item name="android:windowSplashScreenAnimatedIcon">@drawable/brand_logo_splash</item>
         <item name="android:windowSplashScreenAnimationDuration">200</item>

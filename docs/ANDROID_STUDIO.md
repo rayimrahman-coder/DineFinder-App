@@ -364,3 +364,18 @@ timers; a completion callback received while paused waits until foreground resum
 
 Pull, Sync and Run (Default Activity), or open the app from the phone launcher.
 No SQL, keys or database changes are needed.
+
+## 0.8.2: full-screen splash with conditional progress
+
+The splash now uses immersive full-screen playback with centre-crop sizing. It
+fills tall and wide windows while preserving video proportions; edges may be
+cropped. Status and navigation bars are hidden during the intro and can be shown
+transiently with a system swipe. The main app uses its normal system bars.
+
+Skip is removed. The silent clip is still exactly three seconds: the logo reveal
+ends with a half-second hold of a clean frame. The source video's decorative
+loading ring is excluded. An actual progress indicator appears only after a
+500 ms decoder-preparation or buffering delay, and hides once ready. Completion
+still opens the app immediately; failure timeouts prevent a stuck splash.
+
+Pull, Sync and Run with Launch set to Default Activity. No database changes.
