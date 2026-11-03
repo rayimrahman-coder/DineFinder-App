@@ -1,0 +1,10 @@
+<resources>
+    <color name="brand_splash_background">#F4F7F0</color>
+    <item name="brand_splash_video" type="id" />
+    <item name="brand_splash_skip" type="id" />
+    <string name="splash_skip">Skip</string>
+    <string name="splash_skip_description">Skip introduction</string>
+    <style name="Theme.DineFinder.Launch" parent="Theme.DineFinder">
+        <item name="android:windowBackground">@drawable/brand_launch_background</item>
+    </style>
+</resources>

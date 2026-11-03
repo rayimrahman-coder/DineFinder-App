@@ -334,3 +334,20 @@ Restaurant profiles show ratings, review totals and star distributions. Written
 comments, author names, the Read reviews button and the empty-comments message
 are removed. Photos and walking navigation remain available. Existing imported
 review data is retained in Supabase; no SQL migration is needed. Pull, Sync and Run.
+
+## 0.8.0: DineFinder logo and animated splash
+
+Pull, Sync and Run. The default launcher is now BrandSplashActivity, which plays
+the supplied 10-second animation locally and opens the existing MainActivity.
+Tap Skip to enter immediately. The animation has no audio track, requests no
+audio focus, pauses in the background and restores its position on recreation.
+A decoder error or foreground timeout opens the app instead of blocking startup.
+
+The landscape clip is centred with its aspect ratio intact on portrait phones.
+The fork-and-location logo is used in the launcher (including round/themed icons),
+Android 12+ launch screen and welcome page. No new permissions, network services,
+keys or Supabase changes are needed.
+
+If an old Run configuration explicitly launches MainActivity, choose **Launch:
+Default Activity**, or open DineFinder from the phone launcher to see the intro.
+Some phone launchers may keep the old icon cached briefly after updating.

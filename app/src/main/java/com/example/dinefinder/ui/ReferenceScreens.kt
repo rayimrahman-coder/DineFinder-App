@@ -1,5 +1,8 @@
 package com.example.dinefinder.ui
 
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import com.example.dinefinder.R
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -134,14 +137,7 @@ fun WelcomeScreen(
                     modifier = Modifier.widthIn(max = 440.dp).fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(68.dp)
-                            .background(DineMint, RoundedCornerShape(22.dp)),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(Icons.Default.Restaurant, null, tint = DineGreen, modifier = Modifier.size(35.dp))
-                    }
+                    Image(painterResource(R.drawable.dinefinder_logo), "DineFinder logo", modifier = Modifier.size(88.dp))
                     Spacer(Modifier.height(20.dp))
                     Text("DineFinder", style = MaterialTheme.typography.headlineLarge, color = DineInk)
                     Spacer(Modifier.height(10.dp))
