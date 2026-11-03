@@ -56,11 +56,8 @@ import com.example.dinefinder.data.RestaurantRepository
 import com.example.dinefinder.places.NearbyRestaurant
 import com.example.dinefinder.places.NearbyRestaurantMerger
 import com.example.dinefinder.places.PlaceSummary
-import com.example.dinefinder.places.PlacesClient
 import com.example.dinefinder.places.PlacesFailure
-import com.example.dinefinder.places.PlacesSearchResult
 import com.example.dinefinder.settings.ApiKeyStore
-import com.example.dinefinder.settings.GoogleMapsAppIdentity
 import com.example.dinefinder.settings.UserPreferences
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
@@ -108,7 +105,6 @@ class ARDiscoveryActivity : AppCompatActivity(), SensorEventListener {
     private var placesJob: Job? = null
     private var placesGeneration = 0
     private val placesGate = NearbySearchRequestGate()
-    private val placesClient by lazy { PlacesClient.create() }
     private val merger = NearbyRestaurantMerger()
     private val apiKeyStore by lazy { ApiKeyStore(this) }
     private var attributionSignature = ""
@@ -537,6 +533,9 @@ class ARDiscoveryActivity : AppCompatActivity(), SensorEventListener {
         renderMarkers()
     }
 
+    // Projection and MarkerLayoutBounds use physical left/top pixels in both LTR and RTL.
+    // Relative START gravity would mirror that coordinate origin and misplace AR cards.
+    @SuppressLint("RtlHardcoded")
     private fun renderMarkers() {
         val visibleIds = visibleRestaurants.mapTo(mutableSetOf()) { it.restaurant.id }
         val iterator = markerViews.iterator()
@@ -548,9 +547,9 @@ class ARDiscoveryActivity : AppCompatActivity(), SensorEventListener {
                 iterator.remove()
             }
         }
-        for (match in visibleRestaurants) {
-            val marker = markerViews.getOrPut(match.restaurant.id) {
-                createMarker(match.restaurant.id).also {
+        for ((restaurant, distanceMeters) in visibleRestaurants) {
+            val marker = markerViews.getOrPut(restaurant.id) {
+                createMarker(restaurant.id).also {
                     markersContainer.addView(it, FrameLayout.LayoutParams(
                         minOf(dp(200), markersContainer.width), FrameLayout.LayoutParams.WRAP_CONTENT,
                         Gravity.TOP or Gravity.LEFT
@@ -558,7 +557,7 @@ class ARDiscoveryActivity : AppCompatActivity(), SensorEventListener {
                 }
             }
             val icon = marker.findViewById<ImageView>(R.id.restaurantScanMarkerIcon)
-            val iconResource = if (match.restaurant.cuisine.contains("caf", ignoreCase = true))
+            val iconResource = if (restaurant.cuisine.contains("caf", ignoreCase = true))
                 R.drawable.ic_cafe_marker else R.drawable.ic_restaurant_marker
             if (icon.tag != iconResource) {
                 icon.tag = iconResource
@@ -566,11 +565,11 @@ class ARDiscoveryActivity : AppCompatActivity(), SensorEventListener {
             }
             val name = marker.findViewById<TextView>(R.id.restaurantScanMarkerName)
             val distance = marker.findViewById<TextView>(R.id.restaurantScanMarkerDistance)
-            if (name.text.toString() != match.restaurant.name) name.text = match.restaurant.name
-            val distanceLabel = getString(R.string.restaurant_distance_meters, match.distanceMeters.roundToInt())
+            if (name.text.toString() != restaurant.name) name.text = restaurant.name
+            val distanceLabel = getString(R.string.restaurant_distance_meters, distanceMeters.roundToInt())
             if (distance.text.toString() != distanceLabel) distance.text = distanceLabel
             val description = getString(R.string.restaurant_scan_marker,
-                match.restaurant.name, match.distanceMeters.roundToInt())
+                restaurant.name, distanceMeters.roundToInt())
             if (marker.contentDescription != description) marker.contentDescription = description
         }
         positionMarkers()
