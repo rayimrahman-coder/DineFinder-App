@@ -351,3 +351,16 @@ keys or Supabase changes are needed.
 If an old Run configuration explicitly launches MainActivity, choose **Launch:
 Default Activity**, or open DineFinder from the phone launcher to see the intro.
 Some phone launchers may keep the old icon cached briefly after updating.
+
+## 0.8.1: three-second portrait splash
+
+The latest portrait upload replaces the original landscape animation. Its first
+three seconds are bundled as 72 H.264 frames at 720×1280, with no audio stream.
+The image keeps its aspect ratio. Completion immediately opens MainActivity with
+a short fade; there is no extra loading timer after the video. Decoder preparation
+has a separate short timeout and a stalled playback has a bounded fallback.
+Skip still enters the app immediately. Backgrounding pauses playback and cancels
+timers; a completion callback received while paused waits until foreground resume.
+
+Pull, Sync and Run (Default Activity), or open the app from the phone launcher.
+No SQL, keys or database changes are needed.

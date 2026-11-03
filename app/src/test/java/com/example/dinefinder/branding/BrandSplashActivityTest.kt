@@ -65,16 +65,38 @@ class BrandSplashActivityTest {
         assertEquals(MainActivity::class.java.name,shadowOf(activity).nextStartedActivity.component?.className)
         controller.pause().stop().destroy()
     }
+    @Test fun playbackDoesNotLeaveEarlyAndCompletionHandsOffImmediately() {
+        val controller=Robolectric.buildActivity(BrandSplashActivity::class.java).setup()
+        val activity=controller.get()
+        val video=activity.findViewById<VideoView>(R.id.brand_splash_video)
+        shadowOf(video).onPreparedListener.onPrepared(MediaPlayer())
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(2999))
+        assertNull(shadowOf(activity).nextStartedActivity)
+        shadowOf(video).onCompletionListener.onCompletion(MediaPlayer())
+        assertEquals(MainActivity::class.java.name,shadowOf(activity).nextStartedActivity.component?.className)
+        controller.pause().stop().destroy()
+    }
+    @Test fun completionInBackgroundWaitsUntilResume() {
+        val controller=Robolectric.buildActivity(BrandSplashActivity::class.java).setup()
+        val activity=controller.get()
+        val video=activity.findViewById<VideoView>(R.id.brand_splash_video)
+        controller.pause().stop()
+        shadowOf(video).onCompletionListener.onCompletion(MediaPlayer())
+        assertNull(shadowOf(activity).nextStartedActivity)
+        controller.restart().start().resume()
+        assertEquals(MainActivity::class.java.name,shadowOf(activity).nextStartedActivity.component?.className)
+        controller.pause().stop().destroy()
+    }
     @Test fun recreationPreservesPlaybackPosition() {
         val controller=Robolectric.buildActivity(BrandSplashActivity::class.java).setup()
         val activity=controller.get()
-        activity.findViewById<VideoView>(R.id.brand_splash_video).seekTo(4200)
+        activity.findViewById<VideoView>(R.id.brand_splash_video).seekTo(1200)
         val state=android.os.Bundle()
         controller.saveInstanceState(state).pause().stop().destroy()
         val restored=Robolectric.buildActivity(BrandSplashActivity::class.java).create(state).start().resume().visible()
         val video=restored.get().findViewById<VideoView>(R.id.brand_splash_video)
         shadowOf(video).onPreparedListener.onPrepared(MediaPlayer())
-        assertEquals(4200,video.currentPosition)
+        assertEquals(1200,video.currentPosition)
         restored.pause().stop().destroy()
     }
 }

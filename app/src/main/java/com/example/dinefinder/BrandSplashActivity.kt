@@ -1,5 +1,6 @@
 package com.example.dinefinder
 
+import android.app.ActivityOptions
 import android.content.Intent
 import android.graphics.Color
 import android.media.AudioManager
@@ -27,6 +28,7 @@ class BrandSplashActivity : ComponentActivity() {
     private var completed = false
     private var resumed = false
     private var prepared = false
+    private var playbackFailed = false
     private var position = 0
     private val timeout = Runnable { openApp() }
 
@@ -57,17 +59,23 @@ class BrandSplashActivity : ComponentActivity() {
                 prepared = true
                 player.setVolume(0f,0f)
                 player.isLooping = false
-                seekTo(position)
-                if (resumed) start()
+                if (resumed) resumePlayback()
             }
             setOnInfoListener { _, what, _ ->
                 if (what == MediaPlayer.MEDIA_INFO_VIDEO_RENDERING_START) poster.visibility = View.GONE
                 false
             }
-            setOnCompletionListener { openApp() }
-            setOnErrorListener { _, _, _ -> openApp(); true }
+            setOnCompletionListener {
+                position = SPLASH_DURATION_MS
+                if (resumed) openApp()
+            }
+            setOnErrorListener { _, _, _ ->
+                playbackFailed = true
+                if (resumed) openApp()
+                true
+            }
         }
-        // VideoView preserves the landscape aspect ratio inside these bounds.
+        // Preserve the uploaded portrait video on every screen without stretching.
         root.addView(video, FrameLayout.LayoutParams(-1,-1,Gravity.CENTER))
         // Keep the static logo visible until actual frames arrive (no black loading rectangle).
         root.bringChildToFront(poster)
@@ -101,15 +109,28 @@ class BrandSplashActivity : ComponentActivity() {
         super.onResume()
         resumed = true
         if (!completed) {
-            if (prepared) { video.seekTo(position); video.start() }
-            // Prevent a broken decoder from blocking access to the app.
-            handler.postDelayed(timeout, 12_000)
+            when {
+                playbackFailed || position >= SPLASH_DURATION_MS -> openApp()
+                prepared -> resumePlayback()
+                // Bound decoder preparation separately from the three-second clip.
+                else -> handler.postDelayed(timeout, 2_000)
+            }
         }
     }
+    private fun resumePlayback() {
+        if (completed) return
+        if (position >= SPLASH_DURATION_MS) { openApp(); return }
+        handler.removeCallbacks(timeout)
+        video.seekTo(position)
+        video.start()
+        // Completion drives the hand-off; this only covers a stalled decoder.
+        handler.postDelayed(timeout, (SPLASH_DURATION_MS - position).toLong() + 750)
+    }
+
     override fun onPause() {
         resumed = false
         handler.removeCallbacks(timeout)
-        if (::video.isInitialized) { position = video.currentPosition.coerceAtLeast(0); video.pause() }
+        if (::video.isInitialized) { position = video.currentPosition.coerceIn(0, SPLASH_DURATION_MS); video.pause() }
         super.onPause()
     }
     override fun onSaveInstanceState(outState: Bundle) {
@@ -126,8 +147,10 @@ class BrandSplashActivity : ComponentActivity() {
         completed = true
         handler.removeCallbacks(timeout)
         if (::video.isInitialized) video.stopPlayback()
-        startActivity(Intent(this,MainActivity::class.java))
+        startActivity(Intent(this,MainActivity::class.java),
+            ActivityOptions.makeCustomAnimation(this,android.R.anim.fade_in,android.R.anim.fade_out).toBundle())
         finish()
     }
+    companion object { internal const val SPLASH_DURATION_MS = 3_000 }
     private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
 }
