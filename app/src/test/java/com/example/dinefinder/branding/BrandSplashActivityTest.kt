@@ -98,7 +98,7 @@ class BrandSplashActivityTest {
         val activity=controller.get()
         val video=activity.findViewById<VideoView>(R.id.brand_splash_video)
         shadowOf(video).onPreparedListener.onPrepared(MediaPlayer())
-        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(2999))
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(3999))
         assertNull(shadowOf(activity).nextStartedActivity)
         shadowOf(video).onCompletionListener.onCompletion(MediaPlayer())
         assertEquals(MainActivity::class.java.name,shadowOf(activity).nextStartedActivity.component?.className)

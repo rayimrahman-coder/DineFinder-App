@@ -379,3 +379,13 @@ loading ring is excluded. An actual progress indicator appears only after a
 still opens the app immediately; failure timeouts prevent a stuck splash.
 
 Pull, Sync and Run with Launch set to Default Activity. No database changes.
+
+## 0.8.3: full replacement video, without trimming
+
+The latest DineFinder Splash Screen.mp4 is used in full: four seconds, 96 frames.
+All video frames are copied unchanged; only the audio stream is removed. The
+previous trim/freeze treatment is not applied to this upload. Full-screen cover,
+no Skip button, conditional progress and immediate hand-off on completion remain.
+The playback fallback now matches the full four-second duration.
+
+Pull, Sync and Run (Default Activity). No database changes are needed.

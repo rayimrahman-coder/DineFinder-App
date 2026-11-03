@@ -127,7 +127,7 @@ class BrandSplashActivity : ComponentActivity() {
             when {
                 playbackFailed || position >= SPLASH_DURATION_MS -> openApp()
                 prepared -> resumePlayback()
-                // Bound decoder preparation separately from the three-second clip.
+                // Bound decoder preparation separately from the four-second clip.
                 else -> handler.postDelayed(timeout, 2_000)
             }
         }
@@ -175,6 +175,6 @@ class BrandSplashActivity : ComponentActivity() {
             hide(WindowInsetsCompat.Type.systemBars())
         }
     }
-    companion object { internal const val SPLASH_DURATION_MS = 3_000 }
+    companion object { internal const val SPLASH_DURATION_MS = 4_000 }
     private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
 }
